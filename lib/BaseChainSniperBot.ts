@@ -15,7 +15,7 @@ export class BaseChainSniperBot {
 
     // Start monitoring services
     monitorNewPairs();
-    monitorBigBuys();
+    // monitorBigBuys();
     monitorBlocks();
   }
 }

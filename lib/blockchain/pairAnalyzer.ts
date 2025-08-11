@@ -59,16 +59,16 @@ export function shouldAlert(pairInfo: PairInfo): boolean {
   }
   
   // Check token supply (avoid tokens with extremely high supply)
-  const nonWETHToken = pairInfo.token0.address.toLowerCase() === config.WETH_ADDRESS 
-    ? pairInfo.token1 
-    : pairInfo.token0;
+  // const nonWETHToken = pairInfo.token0.address.toLowerCase() === config.WETH_ADDRESS 
+  //   ? pairInfo.token1 
+  //   : pairInfo.token0;
     
-  const supply = new BigNumber(nonWETHToken.totalSupply)
-    .dividedBy(new BigNumber(10).pow(nonWETHToken.decimals));
+  // const supply = new BigNumber(nonWETHToken.totalSupply)
+  //   .dividedBy(new BigNumber(10).pow(nonWETHToken.decimals));
   
-  if (supply.isGreaterThan(config.MAX_SUPPLY_THRESHOLD)) {
-    return false;
-  }
+  // if (supply.isGreaterThan(config.MAX_SUPPLY_THRESHOLD)) {
+  //   return false;
+  // }
   
   return true;
 }

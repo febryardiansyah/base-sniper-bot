@@ -30,8 +30,9 @@ export function monitorNewPairs(): void {
         await sleep(config.RETRY_DELAY_MS * config.BLOCK_CONFIRMATION_COUNT);
         
         const pairInfo = await analyzePair(pairAddress, token0, token1);
+        const isShouldAlert = pairInfo && shouldAlert(pairInfo);
         
-        if (pairInfo && shouldAlert(pairInfo)) {
+        if (isShouldAlert) {
           await sendPairAlert(pairInfo, factoryName);
         }
       } catch (error) {
