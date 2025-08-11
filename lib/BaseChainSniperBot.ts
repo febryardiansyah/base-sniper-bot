@@ -15,8 +15,8 @@ export class BaseChainSniperBot {
     await sendStartupMessage();
 
     // Start monitoring services
-    monitorNewPairs();
-    monitorBigBuys();
+    // monitorNewPairs();
+    // monitorBigBuys();
     // monitorBlocks();
     
     // Set up Telegram command handlers

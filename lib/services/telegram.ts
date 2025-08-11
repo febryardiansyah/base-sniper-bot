@@ -4,7 +4,7 @@ import BigNumber from "bignumber.js";
 import { config } from "../core/config";
 import { PairInfo, BigBuyData } from "../core/types";
 import { getNonWETHToken } from "../blockchain/pairAnalyzer";
-import { buyTokenWithETH } from "./swap";
+import { buyTokenWithETH, sellTokenForETH } from "./swap";
 import { ethers } from "ethers";
 
 // Initialize Telegram bot
@@ -107,9 +107,9 @@ export async function sendSwapExecutionMessage(data: {
 
 // Setup Telegram command handlers
 export function setupCommandHandlers(): void {
-  
+
   // Handle /swap command
-  telegramBot.onText(/\/swap (.+)/, async (msg, match) => {
+  telegramBot.onText(/\/buy (.+)/, async (msg, match) => {
     try {
       const chatId = msg.chat.id;
 
@@ -125,8 +125,8 @@ export function setupCommandHandlers(): void {
       if (args.length < 2) {
         await telegramBot.sendMessage(
           chatId,
-          "⚠️ Invalid format. Use: /swap <token_address> <eth_amount> [router_index] [slippage]\n\n" +
-          "Example: /swap 0x1234...abcd 0.1 0 5\n" +
+          "⚠️ Invalid format. Use: /buy <token_address> <eth_amount> [router_index] [slippage]\n\n" +
+          "Example: /buy 0x1234...abcd 0.1 0 5\n" +
           "Router index: 0 for Uniswap V2, 1 for Aerodrome\n" +
           "Slippage: percentage (default 5%)"
         );
@@ -167,7 +167,7 @@ export function setupCommandHandlers(): void {
       }
 
       // Send processing message
-      await telegramBot.sendMessage(chatId, `🔄 Processing swap of ${ethAmount} ETH for token ${tokenAddress}...`);
+      await telegramBot.sendMessage(chatId, `🔄 Processing swap of ${ethAmount} ETH for token ${tokenAddress}`);
 
       // Execute the swap
       const txHash = await buyTokenWithETH(tokenAddress, ethAmount, routerIndex, slippage);
@@ -180,7 +180,8 @@ export function setupCommandHandlers(): void {
     } catch (error) {
       console.error("Error handling swap command:", error);
       try {
-        await telegramBot.sendMessage(msg.chat.id, "❌ An error occurred while processing your swap request.");
+        await telegramBot.sendMessage(msg.chat.id, `❌ An error occurred while processing your swap request.\n ${error}`);
+
       } catch (telegramError) {
         console.error("Error sending Telegram error message:", telegramError);
       }
@@ -199,14 +200,98 @@ export function setupCommandHandlers(): void {
 
     const helpMessage =
       "🤖 *Base Chain Sniper Bot Commands*\n\n" +
-      "/swap <token_address> <eth_amount> - *Buy tokens with ETH*\n" +
-      // "/swap <token_address> <eth_amount> [router_index] [slippage] - Buy tokens with ETH\n" +
-      // "  Example: /swap 0x1234...abcd 0.1 0 5\n" +
+      "/buy <token_address> <eth_amount> - *Buy tokens with ETH*\n" +
+      "/sell <token_address> <token_amount> - *Sell tokens for ETH*\n" +
+      // "/buy <token_address> <eth_amount> [router_index] [slippage] - Buy tokens with ETH\n" +
+      // "  Example: /buy 0x1234...abcd 0.1 0 5\n" +
       // "  Router index: 0 for Uniswap V2, 1 for Aerodrome\n" +
       // "  Slippage: percentage (default 5%)\n\n" +
       "/help - *Show this help message*";
 
     await telegramBot.sendMessage(chatId, helpMessage, { parse_mode: "Markdown" });
+  });
+
+  // Handle /sell command
+  telegramBot.onText(/\/sell (.+)/, async (msg, match) => {
+    try {
+      const chatId = msg.chat.id;
+
+      // Check if the chat ID matches the configured chat ID
+      if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
+        await telegramBot.sendMessage(chatId, "⛔ Unauthorized access");
+        return;
+      }
+
+      // Parse command arguments
+      const args = (match ?? '')[1].split(' ');
+
+      if (args.length < 2) {
+        await telegramBot.sendMessage(
+          chatId,
+          "⚠️ Invalid format. Use: /sell <token_address> <token_amount> [router_index] [slippage]\n\n" +
+          "Example: /sell 0x1234...abcd 100 0 5\n" +
+          "Router index: 0 for Uniswap V2, 1 for Aerodrome\n" +
+          "Slippage: percentage (default 5%)\n\n" +
+          "Use 'max' as token_amount to sell all tokens"
+        );
+        return;
+      }
+
+      const tokenAddress = args[0];
+      const tokenAmount = args[1];
+      const routerIndex = args.length > 2 ? parseInt(args[2]) : 0;
+      const slippage = args.length > 3 ? parseInt(args[3]) : 5;
+
+      // Validate inputs
+      if (tokenAmount.toLowerCase() !== 'max') {
+        const amount = parseFloat(tokenAmount);
+        if (isNaN(amount) || amount <= 0) {
+          await telegramBot.sendMessage(chatId, "⚠️ Invalid token amount. Must be a positive number or 'max'.");
+          return;
+        }
+      }
+
+      if (![0, 1].includes(routerIndex)) {
+        await telegramBot.sendMessage(chatId, "⚠️ Invalid router index. Use 0 for Uniswap V2 or 1 for Aerodrome.");
+        return;
+      }
+
+      if (isNaN(slippage) || slippage < 1 || slippage > 100) {
+        await telegramBot.sendMessage(chatId, "⚠️ Invalid slippage. Must be between 1 and 100.");
+        return;
+      }
+
+      // Check if wallet private key is configured
+      if (!config.WALLET_PRIVATE_KEY) {
+        await telegramBot.sendMessage(chatId, "⚠️ No wallet private key configured. Cannot execute swap.");
+        return;
+      }
+
+      // Validate token address
+      if (!ethers.isAddress(tokenAddress)) {
+        await telegramBot.sendMessage(chatId, "⚠️ Invalid token address format.");
+        return;
+      }
+
+      // Send processing message
+      await telegramBot.sendMessage(chatId, `🔄 Processing swap to sell ${tokenAmount === 'max' ? 'all' : tokenAmount} tokens of ${tokenAddress} for ETH...`);
+
+      // Execute the swap
+      const txHash = await sellTokenForETH(tokenAddress, tokenAmount, routerIndex, slippage);
+
+      if (txHash) {
+        await telegramBot.sendMessage(chatId, `✅ Sell transaction submitted! TX: ${txHash}`);
+      } else {
+        await telegramBot.sendMessage(chatId, "❌ Sell failed. Check console logs for details.");
+      }
+    } catch (error) {
+      console.error("Error handling sell command:", error);
+      try {
+        await telegramBot.sendMessage(msg.chat.id, `❌ An error occurred while processing your sell request.\n ${error}`);
+      } catch (telegramError) {
+        console.error("Error sending Telegram error message:", telegramError);
+      }
+    }
   });
 
   console.log("🤖 Telegram command handlers set up");

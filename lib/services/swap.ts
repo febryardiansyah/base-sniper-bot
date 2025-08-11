@@ -100,7 +100,7 @@ export async function buyTokenWithETH(
       path,
       wallet.address,
       deadline,
-      { value: ethAmountWei }
+      { value: ethAmountWei, gasLimit: 300000 }
     );
     
     console.log(`⏳ Swap transaction submitted: ${tx.hash}`);
@@ -122,7 +122,7 @@ export async function buyTokenWithETH(
     return receipt.hash;
   } catch (error) {
     console.error("❌ Error executing swap:", error);
-    return null;
+    throw error;
   }
 }
 
@@ -224,6 +224,6 @@ export async function sellTokenForETH(
     return receipt.hash;
   } catch (error) {
     console.error("❌ Error executing swap:", error);
-    return null;
+    throw error;
   }
 }
