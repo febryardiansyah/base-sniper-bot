@@ -1,0 +1,92 @@
+import { ethers } from "ethers";
+import { config } from "../core/config";
+import { BigBuyData } from "../core/types";
+import { factories, routers, factoryNames, routerNames, getTokenInfo } from "./contracts";
+import { analyzePair, shouldAlert } from "./pairAnalyzer";
+import { sendPairAlert, sendBuyAlert } from "../services/telegram";
+import { wsProvider } from "./providers";
+import { sleep } from "../utils/utils";
+
+// Tracked pairs and transactions to avoid duplicates
+const trackedPairs = new Set<string>();
+const processedTransactions = new Set<string>();
+
+// Monitor new pair creation events
+export function monitorNewPairs(): void {
+  factories.forEach((factory, index) => {
+    const factoryName = factoryNames[index];
+    
+    factory.on("PairCreated", async (token0: string, token1: string, pairAddress: string, pairIndex: bigint) => {
+      try {
+        console.log(`🆕 New pair detected on ${factoryName}: ${pairAddress}`);
+        
+        if (trackedPairs.has(pairAddress.toLowerCase())) {
+          return; // Already processed
+        }
+        
+        trackedPairs.add(pairAddress.toLowerCase());
+        
+        // Wait for confirmations
+        await sleep(config.RETRY_DELAY_MS * config.BLOCK_CONFIRMATION_COUNT);
+        
+        const pairInfo = await analyzePair(pairAddress, token0, token1);
+        
+        if (pairInfo && shouldAlert(pairInfo)) {
+          await sendPairAlert(pairInfo, factoryName);
+        }
+      } catch (error) {
+        console.error(`Error processing new pair ${pairAddress}:`, error);
+      }
+    });
+  });
+}
+
+// Monitor big buy events on routers
+export function monitorBigBuys(): void {
+  routers.forEach((router, index) => {
+    const routerName = routerNames[index];
+    
+    router.on("Swap", async (sender: string, amountIn: bigint, amountOutMin: bigint, path: string[], to: string, event: any) => {
+      try {
+        const txHash = event.log.transactionHash;
+        
+        if (processedTransactions.has(txHash)) {
+          return;
+        }
+        
+        processedTransactions.add(txHash);
+        
+        if (!Array.isArray(path) || path.length < 2) return;
+        
+        const inputToken = path[0].toLowerCase();
+        const outputToken = path[path.length - 1].toLowerCase();
+        
+        // Check if buying with ETH
+        if (inputToken === config.WETH_ADDRESS) {
+          const ethAmount = parseFloat(ethers.formatEther(amountIn));
+          
+          if (ethAmount >= config.BIG_BUY_THRESHOLD) {
+            const tokenInfo = await getTokenInfo(outputToken);
+            const buyData: BigBuyData = {
+              sender,
+              ethAmount,
+              tokenInfo,
+              routerName,
+              txHash
+            };
+            await sendBuyAlert(buyData);
+          }
+        }
+      } catch (error) {
+        console.error("Error processing swap event:", error);
+      }
+    });
+  });
+}
+
+// Monitor blocks for logging
+export function monitorBlocks(): void {
+  wsProvider.on("block", (blockNumber) => {
+    console.log(`📦 Block ${blockNumber}`);
+  });
+}
