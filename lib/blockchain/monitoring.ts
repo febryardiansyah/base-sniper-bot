@@ -2,10 +2,11 @@ import { ethers } from "ethers";
 import { config } from "../core/config";
 import { BigBuyData } from "../core/types";
 import { factories, routers, factoryNames, routerNames, getTokenInfo } from "./contracts";
-import { analyzePair, shouldAlert } from "./pairAnalyzer";
+import { analyzePair, shouldAlert, shouldAutoSwap, getNonWETHToken } from "./pairAnalyzer";
 import { sendPairAlert, sendBuyAlert } from "../services/telegram";
 import { wsProvider } from "./providers";
 import { sleep } from "../utils/utils";
+import { buyTokenWithETH } from "../services/swap";
 
 // Tracked pairs and transactions to avoid duplicates
 const trackedPairs = new Set<string>();
@@ -34,6 +35,24 @@ export function monitorNewPairs(): void {
         
         if (isShouldAlert) {
           await sendPairAlert(pairInfo, factoryName);
+          
+          // Check if auto swap is enabled and should be executed
+          if (config.AUTO_SWAP_ENABLED && pairInfo && shouldAutoSwap(pairInfo)) {
+            try {
+              const nonWETHToken = getNonWETHToken(pairInfo);
+              console.log(`🤖 Auto swap triggered for ${nonWETHToken.symbol}`);
+              
+              // Execute the swap
+              await buyTokenWithETH(
+                nonWETHToken.address,
+                config.AUTO_SWAP_BUY_AMOUNT,
+                config.AUTO_SWAP_ROUTER_INDEX,
+                config.AUTO_SWAP_SLIPPAGE_PERCENT
+              );
+            } catch (swapError) {
+              console.error(`Error executing auto swap:`, swapError);
+            }
+          }
         }
       } catch (error) {
         console.error(`Error processing new pair ${pairAddress}:`, error);

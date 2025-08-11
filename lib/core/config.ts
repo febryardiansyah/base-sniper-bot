@@ -19,6 +19,16 @@ export interface Config {
   BLOCK_CONFIRMATION_COUNT: number;
   RETRY_ATTEMPTS: number;
   RETRY_DELAY_MS: number;
+  // Auto swap configuration
+  WALLET_PRIVATE_KEY?: string;
+  AUTO_SWAP_ENABLED: boolean;
+  AUTO_SWAP_BUY_AMOUNT: number;
+  AUTO_SWAP_SLIPPAGE_PERCENT: number;
+  AUTO_SWAP_ROUTER_INDEX: number;
+  AUTO_SWAP_MIN_LIQUIDITY_ETH: number;
+  AUTO_SWAP_MAX_SUPPLY_THRESHOLD: number;
+  AUTO_SWAP_GAS_LIMIT?: number;
+  AUTO_SWAP_GAS_PRICE?: string;
 }
 
 // Configuration object
@@ -37,5 +47,15 @@ export const config: Config = {
   AERODROME_ROUTER: process.env.AERODROME_ROUTER!,
   BLOCK_CONFIRMATION_COUNT: parseInt(process.env.BLOCK_CONFIRMATION_COUNT || "3"),
   RETRY_ATTEMPTS: parseInt(process.env.RETRY_ATTEMPTS || "3"),
-  RETRY_DELAY_MS: parseInt(process.env.RETRY_DELAY_MS || "1000")
+  RETRY_DELAY_MS: parseInt(process.env.RETRY_DELAY_MS || "1000"),
+  // Auto swap configuration
+  WALLET_PRIVATE_KEY: process.env.WALLET_PRIVATE_KEY,
+  AUTO_SWAP_ENABLED: process.env.AUTO_SWAP_ENABLED === "true",
+  AUTO_SWAP_BUY_AMOUNT: parseFloat(process.env.AUTO_SWAP_BUY_AMOUNT || "0.1"),
+  AUTO_SWAP_SLIPPAGE_PERCENT: parseFloat(process.env.AUTO_SWAP_SLIPPAGE_PERCENT || "5"),
+  AUTO_SWAP_ROUTER_INDEX: parseInt(process.env.AUTO_SWAP_ROUTER_INDEX || "0"),
+  AUTO_SWAP_MIN_LIQUIDITY_ETH: parseFloat(process.env.AUTO_SWAP_MIN_LIQUIDITY_ETH || "10.0"),
+  AUTO_SWAP_MAX_SUPPLY_THRESHOLD: parseFloat(process.env.AUTO_SWAP_MAX_SUPPLY_THRESHOLD || "1000000000"),
+  AUTO_SWAP_GAS_LIMIT: process.env.AUTO_SWAP_GAS_LIMIT ? parseInt(process.env.AUTO_SWAP_GAS_LIMIT) : undefined,
+  AUTO_SWAP_GAS_PRICE: process.env.AUTO_SWAP_GAS_PRICE
 };

@@ -11,6 +11,8 @@ A powerful TypeScript bot that monitors the Base blockchain for new token launch
 - **Multi-DEX Support**: Monitors both Uniswap V2 and Aerodrome on Base Chain
 - **Smart Filtering**: Avoids spam tokens with configurable supply thresholds
 - **Real-time Monitoring**: WebSocket connection for instant notifications
+- **Auto Swap**: Automatically buys tokens when new high-liquidity pairs are detected (optional)
+- **Telegram Commands**: Interactive command interface for manual token swaps
 
 ## Prerequisites 📋
 
@@ -58,6 +60,15 @@ TELEGRAM_CHAT_ID=YOUR_TELEGRAM_CHAT_ID
 BIG_BUY_THRESHOLD=1.0  # Minimum ETH amount to trigger big buy alert
 MIN_LIQUIDITY_ETH=5.0  # Minimum liquidity in ETH to trigger new token alert
 MAX_SUPPLY_THRESHOLD=1000000000  # Maximum token supply to consider
+
+# Auto Swap Configuration
+WALLET_PRIVATE_KEY=YOUR_WALLET_PRIVATE_KEY  # Required for auto swap
+AUTO_SWAP_ENABLED=false  # Set to true to enable auto swap
+AUTO_SWAP_BUY_AMOUNT=0.1  # Amount of ETH to spend on each buy
+AUTO_SWAP_SLIPPAGE_PERCENT=5  # Slippage tolerance percentage
+AUTO_SWAP_ROUTER_INDEX=0  # 0 for Uniswap V2, 1 for Aerodrome
+AUTO_SWAP_MIN_LIQUIDITY_ETH=10.0  # Minimum liquidity required to auto swap
+AUTO_SWAP_MAX_SUPPLY_THRESHOLD=1000000000  # Maximum token supply to consider for auto swap
 ```
 
 ### Getting Required Credentials
@@ -93,7 +104,7 @@ npm run build
 
 ## How It Works 🔍
 
-The bot operates in two main monitoring modes:
+The bot operates in three main monitoring modes:
 
 ### 1. New Token Detection
 - Listens to `PairCreated` events from Uniswap V2 and Aerodrome factories
@@ -105,6 +116,19 @@ The bot operates in two main monitoring modes:
 - Monitors `Swap` events on DEX routers
 - Tracks purchases made with ETH above the threshold
 - Provides transaction details and token information
+
+### 3. Auto Swap (Optional)
+- Automatically buys tokens when new high-liquidity pairs are detected
+- Configurable ETH amount per trade
+- Customizable slippage tolerance
+- Supports both Uniswap V2 and Aerodrome routers
+- Sends notifications for executed trades
+
+### 4. Telegram Commands
+- Interactive command interface via Telegram
+- Manual token swaps with customizable parameters
+- Help command for usage instructions
+- Secure access control via chat ID verification
 
 ## Alert Types 📱
 
@@ -136,6 +160,19 @@ The bot operates in two main monitoring modes:
 💡 Someone just made a big purchase!
 ```
 
+### Swap Alert
+```
+🤖 SWAP BOUGHT
+
+💰 Amount: 0.1000 ETH
+🪙 Token Address: 0x...
+🏪 Router: Uniswap V2
+👛 Wallet: 0x...
+🔗 TX: 0x...
+
+✅ Swap executed successfully!
+```
+
 ## Monitored Contracts 📋
 
 ### Factories (New Pair Detection)
@@ -151,6 +188,17 @@ The bot operates in two main monitoring modes:
 
 ## Customization 🎛️
 
+### Telegram Commands
+
+The bot supports the following Telegram commands:
+
+- `/swap <token_address> <eth_amount> [router_index] [slippage]` - Buy tokens with ETH
+  - Example: `/swap 0x1234...abcd 0.1 0 5`
+  - `router_index`: 0 for Uniswap V2, 1 for Aerodrome (default: 0)
+  - `slippage`: Percentage tolerance (default: 5%)
+
+- `/help` - Display available commands and usage information
+
 ### Adjusting Filters
 
 Modify these values in your `.env` file:
@@ -159,6 +207,26 @@ Modify these values in your `.env` file:
 - `MIN_LIQUIDITY_ETH`: Minimum liquidity required for new token alerts
 - `MAX_SUPPLY_THRESHOLD`: Maximum token supply to avoid spam tokens
 - `BLOCK_CONFIRMATION_COUNT`: Number of blocks to wait before processing
+
+### Swap Configuration
+
+Configure swap behavior with these settings:
+
+- `WALLET_PRIVATE_KEY`: Your wallet's private key (required for both auto and manual swaps)
+
+#### Auto Swap Settings
+- `AUTO_SWAP_ENABLED`: Set to `true` to enable automatic token purchases
+- `AUTO_SWAP_BUY_AMOUNT`: Amount of ETH to spend on each auto swap
+- `AUTO_SWAP_SLIPPAGE_PERCENT`: Slippage tolerance percentage
+- `AUTO_SWAP_ROUTER_INDEX`: Router to use (0 for Uniswap V2, 1 for Aerodrome)
+- `AUTO_SWAP_MIN_LIQUIDITY_ETH`: Minimum liquidity required to trigger auto swap
+- `AUTO_SWAP_MAX_SUPPLY_THRESHOLD`: Maximum token supply to consider for auto swap
+
+#### Gas Settings (Optional)
+- `AUTO_SWAP_GAS_LIMIT`: Optional gas limit for swap transactions
+- `AUTO_SWAP_GAS_PRICE`: Optional gas price in gwei
+
+> Note: Manual swaps via Telegram commands use the same wallet private key but allow you to specify custom parameters for each transaction.
 
 ### Adding More DEXs
 
