@@ -5,7 +5,7 @@ import { PairInfo, BigBuyData } from "../core/types";
 import { getNonWETHToken } from "../blockchain/pairAnalyzer";
 import { buyTokenWithETH, sellTokenForETH } from "./swap";
 import { ethers } from "ethers";
-import { checkTokenInfo } from "./info";
+import { checkAddressInfo, checkTokenInfo } from "./info";
 
 // Initialize Telegram bot
 export const telegramBot = new TelegramBot(config.TELEGRAM_BOT_TOKEN, { polling: true });
@@ -327,6 +327,24 @@ export function setupCommandHandlers(): void {
 
     } catch (error) {
       console.error("Error checking balance:", error);
+    }
+  })
+
+  // check address info
+  telegramBot.onText(/\/myinfo/, async (msg) => {
+    const chatId = msg.chat.id;
+
+    // Check if the chat ID matches the configured chat ID
+    if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
+      await telegramBot.sendMessage(chatId, "⛔ Unauthorized access");
+      return;
+    }
+
+    try {
+      const info = checkAddressInfo();
+      await telegramBot.sendMessage(chatId, `🔒 Check your balance here ${info}`);
+    } catch (error) {
+      await telegramBot.sendMessage(chatId, `Error checking address info: ${error}`)
     }
   })
 

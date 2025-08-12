@@ -32,3 +32,8 @@ export async function checkTokenInfo(tokenAdrress: string): Promise<ITokenInfo> 
         throw `Error checking token balance: ${error}`;
     }
 }
+
+export function checkAddressInfo(): string {
+    const wallet = new ethers.Wallet(config.WALLET_PRIVATE_KEY!);
+    return `https://debank.com/profile/${wallet.address}`;
+}
