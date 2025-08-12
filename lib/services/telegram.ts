@@ -1,37 +1,14 @@
 import TelegramBot from "node-telegram-bot-api";
-import axios from "axios";
 import BigNumber from "bignumber.js";
 import { config } from "../core/config";
 import { PairInfo, BigBuyData } from "../core/types";
 import { getNonWETHToken } from "../blockchain/pairAnalyzer";
 import { buyTokenWithETH, sellTokenForETH } from "./swap";
 import { ethers } from "ethers";
+import { checkTokenInfo } from "./info";
 
 // Initialize Telegram bot
 export const telegramBot = new TelegramBot(config.TELEGRAM_BOT_TOKEN, { polling: true });
-
-// Send generic Telegram message
-export async function sendTelegramMessage(message: string): Promise<void> {
-  try {
-    await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
-      parse_mode: "Markdown",
-      disable_web_page_preview: true
-    });
-  } catch (error) {
-    console.error("Error sending Telegram message:", error);
-    // Fallback to axios if telegram bot fails
-    try {
-      await axios.post(`https://api.telegram.org/bot${config.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        chat_id: config.TELEGRAM_CHAT_ID,
-        text: message,
-        parse_mode: "Markdown",
-        disable_web_page_preview: true
-      });
-    } catch (axiosError) {
-      console.error("Error sending message via axios:", axiosError);
-    }
-  }
-}
 
 // Send new pair alert
 export async function sendPairAlert(pairInfo: PairInfo, exchange: string): Promise<void> {
@@ -48,7 +25,14 @@ export async function sendPairAlert(pairInfo: PairInfo, exchange: string): Promi
     `🔗 *DexScreener URL:* \[Open Link](http://dexscreener.com/base/${nonWETHToken.address})\`\n\n` +
     `⚡ *SNIPE OPPORTUNITY DETECTED!*`;
 
-  await sendTelegramMessage(message);
+  try {
+    await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
+      parse_mode: "Markdown",
+      disable_web_page_preview: true
+    });
+  } catch (error) {
+    console.error("Error sending Telegram message:", error);
+  }
   console.log(`🚨 ALERT: New token ${nonWETHToken.symbol} with ${pairInfo.liquidityETH.toFixed(2)} ETH liquidity`);
 }
 
@@ -67,17 +51,31 @@ export async function sendBuyAlert(data: BigBuyData): Promise<void> {
     `🔗 TX: \`${data.txHash}\`\n\n` +
     `💡 *Someone just made a big purchase!*`;
 
-  await sendTelegramMessage(message);
+  try {
+    await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
+      parse_mode: "Markdown",
+      disable_web_page_preview: true
+    });
+  } catch (error) {
+    console.error("Error sending Telegram message:", error);
+  }
   console.log(`🔥 BIG BUY: ${data.ethAmount.toFixed(4)} ETH spent on ${tokenSymbol}`);
 }
 
 // Send bot startup message
 export async function sendStartupMessage(): Promise<void> {
-  await sendTelegramMessage(
-    `🤖 Base Chain Sniper Bot is now ONLINE!\n\n` +
+  const message = `🤖 Base Chain Sniper Bot is now ONLINE!\n\n` +
     `📊 Monitoring new tokens with high liquidity...\n\n` +
-    `💬 Use /help to see available commands`
-  );
+    `💬 Use /help to see available commands`;
+
+  try {
+    await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
+      parse_mode: "Markdown",
+      disable_web_page_preview: true
+    });
+  } catch (error) {
+    console.error("Error sending Telegram message:", error);
+  }
 }
 
 // Send swap execution message
@@ -101,7 +99,14 @@ export async function sendSwapExecutionMessage(data: {
     `🔗 TX: \`${data.txHash}\`\n\n` +
     `✅ *Swap executed successfully!*`;
 
-  await sendTelegramMessage(message);
+  try {
+    await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
+      parse_mode: "Markdown",
+      disable_web_page_preview: true
+    });
+  } catch (error) {
+    console.error("Error sending Telegram message:", error);
+  }
   console.log(`🤖 SWAP: ${action} ${amountText} of ${data.tokenAddress}`);
 }
 
@@ -170,10 +175,17 @@ export function setupCommandHandlers(): void {
       await telegramBot.sendMessage(chatId, `🔄 Processing swap of ${ethAmount} ETH for token ${tokenAddress}`);
 
       // Execute the swap
-      const txHash = await buyTokenWithETH(tokenAddress, ethAmount, routerIndex, slippage);
+      const buyResult = await buyTokenWithETH(tokenAddress, ethAmount);
 
-      if (txHash) {
-        await telegramBot.sendMessage(chatId, `✅ Swap transaction submitted! TX: ${txHash}`);
+      if (buyResult) {
+        await telegramBot.sendMessage(chatId,
+          `✅ *Swap transaction submitted! Tx Hash*: \`${buyResult.txHash}\n\n\`` +
+          `📊 *Purchased* : ${ethers.formatUnits(buyResult.tokenInfo.balance.toString(), buyResult.tokenInfo.decimals)} *${buyResult.tokenInfo.symbol}*`,
+          {
+            parse_mode: 'Markdown'
+          }
+        );
+
       } else {
         await telegramBot.sendMessage(chatId, "❌ Swap failed. Check console logs for details.");
       }
@@ -293,6 +305,31 @@ export function setupCommandHandlers(): void {
       }
     }
   });
+
+  // check balance
+  telegramBot.onText(/\/balance/, async (msg) => {
+    const chatId = msg.chat.id;
+
+    // Check if the chat ID matches the configured chat ID
+    if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
+      await telegramBot.sendMessage(chatId, "⛔ Unauthorized access");
+      return;
+    }
+
+    try {
+      const balance = await checkTokenInfo('0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b');
+
+      await telegramBot.sendMessage(chatId,
+        `\n📊 Token Balance: ${ethers.formatUnits(balance.balance.toString(), balance.decimals)} ${balance.symbol}`,
+        { parse_mode: "Markdown" }
+      );
+
+
+    } catch (error) {
+      console.error("Error checking balance:", error);
+    }
+  })
+
 
   console.log("🤖 Telegram command handlers set up");
 }

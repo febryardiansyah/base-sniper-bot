@@ -46,8 +46,6 @@ export function monitorNewPairs(): void {
               await buyTokenWithETH(
                 nonWETHToken.address,
                 config.AUTO_SWAP_BUY_AMOUNT,
-                config.AUTO_SWAP_ROUTER_INDEX,
-                config.AUTO_SWAP_SLIPPAGE_PERCENT
               );
             } catch (swapError) {
               console.error(`Error executing auto swap:`, swapError);

@@ -6,6 +6,7 @@ dotenv.config();
 export interface Config {
   ALCHEMY_WS_URL: string;
   ALCHEMY_HTTP_URL: string;
+  BASE_MAINET_RPC_URL: string;
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_CHAT_ID: string;
   BIG_BUY_THRESHOLD: number;
@@ -35,6 +36,7 @@ export interface Config {
 export const config: Config = {
   ALCHEMY_WS_URL: process.env.ALCHEMY_WS_URL!,
   ALCHEMY_HTTP_URL: process.env.ALCHEMY_HTTP_URL!,
+  BASE_MAINET_RPC_URL: process.env.BASE_MAINET_RPC_URL!,
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN!,
   TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID!,
   BIG_BUY_THRESHOLD: parseFloat(process.env.BIG_BUY_THRESHOLD || "1.0"),

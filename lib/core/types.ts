@@ -37,3 +37,15 @@ export interface AutoSwapConfig {
   gasLimit?: number; // Optional gas limit for swap transactions
   gasPrice?: string; // Optional gas price in gwei
 }
+
+export interface ITokenInfo {
+  balance: BigNumber;
+  decimals: number;
+  symbol: string;
+}
+
+export interface ISwapResult {
+  txHash: string;
+  tokenInfo: ITokenInfo;
+}
+
