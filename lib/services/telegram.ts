@@ -289,10 +289,16 @@ export function setupCommandHandlers(): void {
       await telegramBot.sendMessage(chatId, `🔄 Processing swap to sell ${tokenAmount === 'max' ? 'all' : tokenAmount} tokens of ${tokenAddress} for ETH...`);
 
       // Execute the swap
-      const txHash = await sellTokenForETH(tokenAddress, tokenAmount, routerIndex, slippage);
+      const sellResult = await sellTokenForETH(tokenAddress, tokenAmount, routerIndex, slippage);
 
-      if (txHash) {
-        await telegramBot.sendMessage(chatId, `✅ Sell transaction submitted! TX: ${txHash}`);
+      if (sellResult) {
+        await telegramBot.sendMessage(chatId,
+          `✅ *Sell transaction submitted! Tx Hash*: \`${sellResult.txHash}\`\n\n` +
+          `💰 *Remaining* : ${ethers.formatUnits(sellResult.tokenInfo.balance.toString(), sellResult.tokenInfo.decimals)} *${sellResult.tokenInfo.symbol}*`,
+          {
+            parse_mode: 'Markdown'
+          }
+        );
       } else {
         await telegramBot.sendMessage(chatId, "❌ Sell failed. Check console logs for details.");
       }
@@ -305,30 +311,6 @@ export function setupCommandHandlers(): void {
       }
     }
   });
-
-  // check balance
-  telegramBot.onText(/\/balance/, async (msg) => {
-    const chatId = msg.chat.id;
-
-    // Check if the chat ID matches the configured chat ID
-    if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
-      await telegramBot.sendMessage(chatId, "⛔ Unauthorized access");
-      return;
-    }
-
-    try {
-      const balance = await checkTokenInfo('0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b');
-
-      await telegramBot.sendMessage(chatId,
-        `\n📊 Token Balance: ${ethers.formatUnits(balance.balance.toString(), balance.decimals)} ${balance.symbol}`,
-        { parse_mode: "Markdown" }
-      );
-
-
-    } catch (error) {
-      console.error("Error checking balance:", error);
-    }
-  })
 
   // check address info
   telegramBot.onText(/\/myinfo/, async (msg) => {
@@ -345,6 +327,29 @@ export function setupCommandHandlers(): void {
       await telegramBot.sendMessage(chatId, `🔒 Check your balance here ${info}`);
     } catch (error) {
       await telegramBot.sendMessage(chatId, `Error checking address info: ${error}`)
+    }
+  })
+
+  telegramBot.onText(/\/tokenbalance (.+)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+
+    // Check if the chat ID matches the configured chat ID
+    if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
+      await telegramBot.sendMessage(chatId, "⛔ Unauthorized access");
+      return;
+    }
+
+    const args = (match ?? '')[1].split(' ');
+    const tokenAddress = args[0];
+
+    try {
+      const balance = await checkTokenInfo(tokenAddress);
+      await telegramBot.sendMessage(chatId,
+        `\n📊 *Token Balance*: ${ethers.formatUnits(balance.balance.toString(), balance.decimals)} *${balance.symbol}*`,
+        { parse_mode: "Markdown" }
+      );
+    } catch (error) {
+      await telegramBot.sendMessage(chatId, `Error checking token balance: ${error}`)
     }
   })
 

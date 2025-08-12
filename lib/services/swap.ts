@@ -8,8 +8,13 @@ import { checkTokenInfo } from "./info";
 
 // Complete Router ABI with swap functions
 const routerAbi = [
+  // Buy functions (ETH -> Token)
   "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)",
   "function swapExactETHForTokensSupportingFeeOnTransferTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable",
+  // Sell functions (Token -> ETH)
+  "function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)",
+  "function swapExactTokensForETHSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external",
+  // Utility functions
   "function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)",
   "function factory() external pure returns (address)"
 ];
@@ -167,20 +172,12 @@ export async function sellTokenForETH(
   tokenAmount: string,
   routerIndex: number = 0,
   slippagePercent: number = 5
-): Promise<string | null> {
+): Promise<ISwapResult | null> {
   try {
     if (!config.WALLET_PRIVATE_KEY) {
       console.error("❌ No wallet private key provided for auto swap");
-      return null;
+      throw new Error("No wallet private key provided");
     }
-
-    // Create wallet instance
-    const wallet = new ethers.Wallet(config.WALLET_PRIVATE_KEY, httpProvider);
-    const routerAddress = routerIndex === 0 ? config.UNISWAP_V2_ROUTER : config.AERODROME_ROUTER;
-    const routerName = routerNames[routerIndex];
-
-    // Create router contract instance with full ABI
-    const router = new ethers.Contract(routerAddress, routerAbi, wallet);
 
     // Create ERC20 token contract instance
     const tokenContract = new ethers.Contract(
@@ -188,7 +185,9 @@ export async function sellTokenForETH(
       [
         "function approve(address spender, uint256 amount) returns (bool)",
         "function balanceOf(address owner) view returns (uint256)",
-        "function decimals() view returns (uint8)"
+        "function decimals() view returns (uint8)",
+        "function name() view returns (string)", 
+        "function symbol() view returns (string)"
       ],
       wallet
     );
@@ -204,52 +203,152 @@ export async function sellTokenForETH(
       amount = ethers.parseUnits(tokenAmount, decimals);
     }
 
-    // Calculate deadline (30 minutes from now)
-    const deadline = Math.floor(Date.now() / 1000) + 30 * 60;
-
     // Create path for the swap (Token -> ETH)
     const path = [tokenAddress, config.WETH_ADDRESS];
 
-    // Approve router to spend tokens
-    console.log(`🔑 Approving ${routerName} to spend tokens...`);
-    const approveTx = await tokenContract.approve(routerAddress, amount);
-    await approveTx.wait();
-    console.log(`✅ Approval confirmed: ${approveTx.hash}`);
+    let txResult: ISwapResult | null = null;
 
-    // Calculate minimum amount out with slippage
-    // Note: In a real implementation, you would get a price quote first
-    // This is a simplified version that assumes a minimal output
-    const amountOutMin = ethers.parseEther("0");
+    // Try each router in sequence
+    for (let i = 0; i < swapRouters.length; i++) {
+      const router = swapRouters[i];
+      const routerName = routerNames[i];
 
-    console.log(`🔄 Executing swap: ${tokenAmount} tokens for ETH on ${routerName}`);
+      console.log(`\n🔄 Trying ${routerName} router for selling tokens...`);
 
-    // Execute the swap
-    const tx = await router.swapExactTokensForETH(
-      amount,
-      amountOutMin,
-      path,
-      wallet.address,
-      deadline
-    );
+      // check if pair exist in factory
+      try {
+        const factoryAddress = await router.factory();
+        console.log(`${routerName} Factory address: ${factoryAddress}`);
 
-    console.log(`⏳ Swap transaction submitted: ${tx.hash}`);
+        const factory = new ethers.Contract(factoryAddress, factoryABI, baseProvider);
 
-    // Wait for transaction to be mined
-    const receipt = await tx.wait();
+        const pairAddress = await factory.getPair(tokenAddress, config.WETH_ADDRESS);
 
-    console.log(`✅ Swap transaction confirmed: ${receipt.hash}`);
+        if (pairAddress === ethers.ZeroAddress) {
+          console.log(`❌ No liquidity pool exists for this token and WETH on ${routerName}`);
+          continue;
+        }
 
-    // Send notification
-    await sendSwapExecutionMessage({
-      tokenAddress,
-      ethAmount: 0, // We don't know the exact ETH amount received
-      routerName,
-      txHash: receipt.hash,
-      walletAddress: wallet.address,
-      isSell: true
-    });
+        console.log(`✅ Found liquidity pool at ${pairAddress} on ${routerName}`);
+      } catch (error) {
+        console.error(`Error checking liquidity pool on ${routerName}: ${error}`);
+        continue;
+      }
 
-    return receipt.hash;
+      try {
+        console.log(`Checking if there's liquidity for the pair ${tokenAddress}/WETH on ${routerName}...`);
+
+        let amounts;
+        try {
+          amounts = await router.getAmountsOut(amount, path);
+          console.log(`✅ Liquidity found on ${routerName}! Expected output: ${ethers.formatEther(amounts[1])} ETH`);
+        } catch (error) {
+          console.log(`❌ No liquidity found on ${routerName}. Error: ${error}`);
+          continue;
+        }
+
+        const amountOutMin = amounts[1] * BigInt(100 - slippagePercent) / 100n;
+        console.log(`Minimum output: ${ethers.formatEther(amountOutMin)} ETH`);
+
+        let tokenInfo = "Unknown Token";
+        try {
+          const [name, symbol] = await Promise.all([
+            tokenContract.name().catch(() => "Unknown"),
+            tokenContract.symbol().catch(() => "???")
+          ]);
+          tokenInfo = `${name} (${symbol})`;
+          console.log(`Swapping ${tokenInfo} for ETH`);
+        } catch (error) {
+          console.log("Could not get token info, proceeding anyway");
+        }
+
+        // Approve router to spend tokens
+        console.log(`🔑 Approving ${routerName} to spend tokens...`);
+        const approveTx = await tokenContract.approve(router.target, amount);
+        await approveTx.wait();
+        console.log(`✅ Approval confirmed: ${approveTx.hash}`);
+
+        console.log(`Swapping on ${routerName}...`);
+        const deadline = Math.floor(Date.now() / 1000) + 60 * 10; // 10 minutes
+
+        // Try regular swap first
+        try {
+          const tx = await router.swapExactTokensForETH(
+            amount,
+            amountOutMin,
+            path,
+            wallet.address,
+            deadline,
+            { gasLimit: 300000 }
+          );
+
+          console.log(`Transaction sent on ${routerName}, waiting for confirmation...`);
+          const receipt = await tx.wait();
+          console.log(`✅ Swap complete on ${routerName}! Hash: ${receipt.hash}`);
+          
+          const balance = await checkTokenInfo(tokenAddress);
+          txResult = {
+            txHash: receipt.hash,
+            tokenInfo: balance,
+          };
+
+          // Send notification
+          await sendSwapExecutionMessage({
+            tokenAddress,
+            ethAmount: parseFloat(ethers.formatEther(amounts[1])),
+            routerName,
+            txHash: receipt.hash,
+            walletAddress: wallet.address,
+            isSell: true
+          });
+          
+          break; // Exit the loop if successful
+        } catch (error) {
+          console.log(`Regular swap failed on ${routerName}, trying with fee on transfer support...`);
+
+          try {
+            // If regular swap fails, try with fee on transfer support
+            const tx = await router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+              amount,
+              0n, // Set to 0 for tokens with fees
+              path,
+              wallet.address,
+              deadline,
+              { gasLimit: 500000 }
+            );
+
+            console.log(`Fee-supporting transaction sent on ${routerName}, waiting for confirmation...`);
+            const receipt = await tx.wait();
+            console.log(`✅ Fee-supporting swap complete on ${routerName}! Hash: ${receipt.hash}`);
+            
+            const balance = await checkTokenInfo(tokenAddress);
+            txResult = {
+              txHash: receipt.hash,
+              tokenInfo: balance,
+            };
+
+            // Send notification
+            await sendSwapExecutionMessage({
+              tokenAddress,
+              ethAmount: parseFloat(ethers.formatEther(amounts[1])),
+              routerName,
+              txHash: receipt.hash,
+              walletAddress: wallet.address,
+              isSell: true
+            });
+            
+            break; // Exit the loop if successful
+          } catch (feeError) {
+            console.error(`❌ Fee-supporting swap also failed on ${routerName}: ${feeError}`);
+            // Continue to next router
+          }
+        }
+      } catch (error) {
+        console.error(`Error during swap on ${routerName}:`, error);
+      }
+    }
+
+    return txResult;
   } catch (error) {
     console.error("❌ Error executing swap:", error);
     throw error;
