@@ -1,8 +1,7 @@
 import { ethers } from "ethers";
 import { config } from "../core/config";
-import { baseProvider, httpProvider } from "../blockchain/providers";
-import { routers, routerNames } from "../blockchain/contracts";
-import { sendSwapExecutionMessage } from "./telegram";
+import { baseProvider } from "../blockchain/providers";
+import { routerNames } from "../blockchain/contracts";
 import { ISwapResult } from "../core/types";
 import { checkTokenInfo } from "./info";
 
@@ -16,24 +15,32 @@ const routerAbi = [
   "function swapExactTokensForETHSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external",
   // Utility functions
   "function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)",
-  "function factory() external pure returns (address)"
+  "function factory() external pure returns (address)",
 ];
 
 const factoryABI = [
-  "function getPair(address tokenA, address tokenB) external view returns (address pair)"
+  "function getPair(address tokenA, address tokenB) external view returns (address pair)",
 ];
 
 // Create wallet instance
 const wallet = new ethers.Wallet(config.WALLET_PRIVATE_KEY!, baseProvider);
 
-const aerodromeRouter = new ethers.Contract(config.AERODROME_ROUTER, routerAbi, wallet);
-const uniswapRouter = new ethers.Contract(config.UNISWAP_V2_ROUTER, routerAbi, wallet);
+const aerodromeRouter = new ethers.Contract(
+  config.AERODROME_ROUTER,
+  routerAbi,
+  wallet
+);
+const uniswapRouter = new ethers.Contract(
+  config.UNISWAP_V2_ROUTER,
+  routerAbi,
+  wallet
+);
 
 const swapRouters = [aerodromeRouter, uniswapRouter];
 
 export async function buyTokenWithETH(
   tokenAddress: string,
-  ethAmount: number,
+  ethAmount: number
 ): Promise<ISwapResult | null> {
   try {
     if (!config.WALLET_PRIVATE_KEY) {
@@ -58,53 +65,58 @@ export async function buyTokenWithETH(
         const factoryAddress = await router.factory();
         console.log(`${routerName} Factory address: ${factoryAddress}`);
 
-        const factory = new ethers.Contract(factoryAddress, factoryABI, baseProvider);
+        const factory = new ethers.Contract(
+          factoryAddress,
+          factoryABI,
+          baseProvider
+        );
 
-        const pairAddress = await factory.getPair(config.WETH_ADDRESS, tokenAddress);
+        const pairAddress = await factory.getPair(
+          config.WETH_ADDRESS,
+          tokenAddress
+        );
 
         if (pairAddress === ethers.ZeroAddress) {
-          console.log(`❌ No liquidity pool exists for WETH and this token on ${routerName}`);
+          console.log(
+            `❌ No liquidity pool exists for WETH and this token on ${routerName}`
+          );
           continue;
         }
 
-        console.log(`✅ Found liquidity pool at ${pairAddress} on ${routerName}`);
+        console.log(
+          `✅ Found liquidity pool at ${pairAddress} on ${routerName}`
+        );
       } catch (error) {
-        console.error(`Error checking liquidity pool on ${routerName}: ${error}`);
+        console.error(
+          `Error checking liquidity pool on ${routerName}: ${error}`
+        );
       }
 
       try {
-        console.log(`Checking if there's liquidity for the pair WETH/${tokenAddress} on ${routerName}...`);
+        console.log(
+          `Checking if there's liquidity for the pair WETH/${tokenAddress} on ${routerName}...`
+        );
 
         let amounts;
         try {
-          amounts = await router.getAmountsOut(amountIn, path)
-          console.log(`✅ Liquidity found on ${routerName}! Expected output: ${ethers.formatUnits(amounts[1], 18)} tokens`);
+          amounts = await router.getAmountsOut(amountIn, path);
+          console.log(
+            `✅ Liquidity found on ${routerName}! Expected output: ${ethers.formatUnits(
+              amounts[1],
+              18
+            )} tokens`
+          );
         } catch (error) {
           console.log(`❌ No liquidity found on ${routerName}. Error ${error}`);
           continue;
         }
 
-        const amountOutMin = amounts[1] * 95n / 100n;
-        console.log(`Minimum output: ${ethers.formatUnits(amountOutMin, 18)} tokens`);
-
-        const tokenContract = new ethers.Contract(
-          tokenAddress,
-          ["function name() view returns (string)", "function symbol() view returns (string)"],
-          baseProvider
+        const amountOutMin = (amounts[1] * 95n) / 100n;
+        console.log(
+          `Minimum output: ${ethers.formatUnits(amountOutMin, 18)} tokens`
         );
 
-        let tokenInfo = "Unknown Token";
-        try {
-          const [name, symbol] = await Promise.all([
-            tokenContract.name().catch(() => "Unknown"),
-            tokenContract.symbol().catch(() => "???")
-          ]);
-          tokenInfo = `${name} (${symbol})`;
-          console.log(`Swapping ETH for ${tokenInfo}`);
-        } catch (error) {
-          console.log("Could not get token info, proceeding anyway");
-        }
-
+        const tokenInfo = await checkTokenInfo(tokenAddress);
         console.log(`Swapping on ${routerName}...`);
 
         // Try regular swap first
@@ -117,41 +129,52 @@ export async function buyTokenWithETH(
             { value: amountIn, gasLimit: 300000 }
           );
 
-          console.log(`Transaction sent on ${routerName}, waiting for confirmation...`);
+          console.log(
+            `Transaction sent on ${routerName}, waiting for confirmation...`
+          );
           const receipt = await tx.wait();
-          console.log(`✅ Swap complete on ${routerName}! Hash: ${receipt.hash}`);
-          const balance = await checkTokenInfo(tokenAddress);
-          balance.balance = amounts[1].toString()
+          console.log(
+            `✅ Swap complete on ${routerName}! Hash: ${receipt.hash}`
+          );
+          tokenInfo.balance = amounts[1].toString();
           txResult = {
             txHash: receipt.hash,
-            tokenInfo: balance,
+            tokenInfo: tokenInfo,
           };
           break; // Exit the loop if successful
         } catch (error) {
-          console.log(`Regular swap failed on ${routerName}, trying with fee on transfer support...`);
+          console.log(
+            `Regular swap failed on ${routerName}, trying with fee on transfer support...`
+          );
 
           try {
             // If regular swap fails, try with fee on transfer support
-            const tx = await router.swapExactETHForTokensSupportingFeeOnTransferTokens(
-              0n, // Set to 0 for tokens with fees
-              path,
-              wallet.address,
-              Math.floor(Date.now() / 1000) + 60 * 10,
-              { value: amountIn, gasLimit: 500000 }
-            );
+            const tx =
+              await router.swapExactETHForTokensSupportingFeeOnTransferTokens(
+                0n, // Set to 0 for tokens with fees
+                path,
+                wallet.address,
+                Math.floor(Date.now() / 1000) + 60 * 10,
+                { value: amountIn, gasLimit: 500000 }
+              );
 
-            console.log(`Fee-supporting transaction sent on ${routerName}, waiting for confirmation...`);
+            console.log(
+              `Fee-supporting transaction sent on ${routerName}, waiting for confirmation...`
+            );
             const receipt = await tx.wait();
-            console.log(`✅ Fee-supporting swap complete on ${routerName}! Hash: ${receipt.hash}`);
-            const balance = await checkTokenInfo(tokenAddress);
-            balance.balance = amounts[1].toString()
+            console.log(
+              `✅ Fee-supporting swap complete on ${routerName}! Hash: ${receipt.hash}`
+            );
+            tokenInfo.balance = amounts[1].toString();
             txResult = {
               txHash: receipt.hash,
-              tokenInfo: balance,
+              tokenInfo: tokenInfo,
             };
             break; // Exit the loop if successful
           } catch (feeError) {
-            console.error(`❌ Fee-supporting swap also failed on ${routerName}: ${feeError}`);
+            console.error(
+              `❌ Fee-supporting swap also failed on ${routerName}: ${feeError}`
+            );
             // Continue to next router
           }
         }
@@ -182,25 +205,19 @@ export async function sellTokenForETH(
     // Create ERC20 token contract instance
     const tokenContract = new ethers.Contract(
       tokenAddress,
-      [
-        "function approve(address spender, uint256 amount) returns (bool)",
-        "function balanceOf(address owner) view returns (uint256)",
-        "function decimals() view returns (uint8)",
-        "function name() view returns (string)", 
-        "function symbol() view returns (string)"
-      ],
+      ["function approve(address spender, uint256 amount) returns (bool)"],
       wallet
     );
 
     // Get token decimals
-    const decimals = await tokenContract.decimals();
+    const tokenInfo = await checkTokenInfo(tokenAddress);
 
     // If tokenAmount is 'max', get the wallet's token balance
     let amount;
-    if (tokenAmount.toLowerCase() === 'max') {
-      amount = await tokenContract.balanceOf(wallet.address);
+    if (tokenAmount.toLowerCase() === "max") {
+      amount = tokenInfo.balance;
     } else {
-      amount = ethers.parseUnits(tokenAmount, decimals);
+      amount = ethers.parseUnits(tokenAmount, tokenInfo.decimals);
     }
 
     // Create path for the swap (Token -> ETH)
@@ -220,47 +237,57 @@ export async function sellTokenForETH(
         const factoryAddress = await router.factory();
         console.log(`${routerName} Factory address: ${factoryAddress}`);
 
-        const factory = new ethers.Contract(factoryAddress, factoryABI, baseProvider);
+        const factory = new ethers.Contract(
+          factoryAddress,
+          factoryABI,
+          baseProvider
+        );
 
-        const pairAddress = await factory.getPair(tokenAddress, config.WETH_ADDRESS);
+        const pairAddress = await factory.getPair(
+          tokenAddress,
+          config.WETH_ADDRESS
+        );
 
         if (pairAddress === ethers.ZeroAddress) {
-          console.log(`❌ No liquidity pool exists for this token and WETH on ${routerName}`);
+          console.log(
+            `❌ No liquidity pool exists for this token and WETH on ${routerName}`
+          );
           continue;
         }
 
-        console.log(`✅ Found liquidity pool at ${pairAddress} on ${routerName}`);
+        console.log(
+          `✅ Found liquidity pool at ${pairAddress} on ${routerName}`
+        );
       } catch (error) {
-        console.error(`Error checking liquidity pool on ${routerName}: ${error}`);
+        console.error(
+          `Error checking liquidity pool on ${routerName}: ${error}`
+        );
         continue;
       }
 
       try {
-        console.log(`Checking if there's liquidity for the pair ${tokenAddress}/WETH on ${routerName}...`);
+        console.log(
+          `Checking if there's liquidity for the pair ${tokenAddress}/WETH on ${routerName}...`
+        );
 
         let amounts;
         try {
           amounts = await router.getAmountsOut(amount, path);
-          console.log(`✅ Liquidity found on ${routerName}! Expected output: ${ethers.formatEther(amounts[1])} ETH`);
+          console.log(
+            `✅ Liquidity found on ${routerName}! Expected output: ${ethers.formatEther(
+              amounts[1]
+            )} ETH`
+          );
         } catch (error) {
-          console.log(`❌ No liquidity found on ${routerName}. Error: ${error}`);
+          console.log(
+            `❌ No liquidity found on ${routerName}. Error: ${error}`
+          );
           continue;
         }
 
-        const amountOutMin = amounts[1] * BigInt(100 - slippagePercent) / 100n;
+        const amountOutMin =
+          (amounts[1] * BigInt(100 - slippagePercent)) / 100n;
         console.log(`Minimum output: ${ethers.formatEther(amountOutMin)} ETH`);
-
-        let tokenInfo = "Unknown Token";
-        try {
-          const [name, symbol] = await Promise.all([
-            tokenContract.name().catch(() => "Unknown"),
-            tokenContract.symbol().catch(() => "???")
-          ]);
-          tokenInfo = `${name} (${symbol})`;
-          console.log(`Swapping ${tokenInfo} for ETH`);
-        } catch (error) {
-          console.log("Could not get token info, proceeding anyway");
-        }
 
         // Approve router to spend tokens
         console.log(`🔑 Approving ${routerName} to spend tokens...`);
@@ -282,64 +309,75 @@ export async function sellTokenForETH(
             { gasLimit: 300000 }
           );
 
-          console.log(`Transaction sent on ${routerName}, waiting for confirmation...`);
+          console.log(
+            `Transaction sent on ${routerName}, waiting for confirmation...`
+          );
           const receipt = await tx.wait();
-          console.log(`✅ Swap complete on ${routerName}! Hash: ${receipt.hash}`);
-          
-          const balance = await checkTokenInfo(tokenAddress);
+          console.log(
+            `✅ Swap complete on ${routerName}! Hash: ${receipt.hash}`
+          );
+
           txResult = {
             txHash: receipt.hash,
-            tokenInfo: balance,
+            tokenInfo: tokenInfo,
           };
 
           // Send notification
-          await sendSwapExecutionMessage({
-            tokenAddress,
-            ethAmount: parseFloat(ethers.formatEther(amounts[1])),
-            routerName,
-            txHash: receipt.hash,
-            walletAddress: wallet.address,
-            isSell: true
-          });
-          
+          // await sendSwapExecutionMessage({
+          //   tokenAddress,
+          //   ethAmount: parseFloat(ethers.formatEther(amounts[1])),
+          //   routerName,
+          //   txHash: receipt.hash,
+          //   walletAddress: wallet.address,
+          //   isSell: true,
+          // });
+
           break; // Exit the loop if successful
         } catch (error) {
-          console.log(`Regular swap failed on ${routerName}, trying with fee on transfer support...`);
+          console.log(
+            `Regular swap failed on ${routerName}, trying with fee on transfer support...`
+          );
 
           try {
             // If regular swap fails, try with fee on transfer support
-            const tx = await router.swapExactTokensForETHSupportingFeeOnTransferTokens(
-              amount,
-              0n, // Set to 0 for tokens with fees
-              path,
-              wallet.address,
-              deadline,
-              { gasLimit: 500000 }
+            const tx =
+              await router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+                amount,
+                0n, // Set to 0 for tokens with fees
+                path,
+                wallet.address,
+                deadline,
+                { gasLimit: 500000 }
+              );
+
+            console.log(
+              `Fee-supporting transaction sent on ${routerName}, waiting for confirmation...`
+            );
+            const receipt = await tx.wait();
+            console.log(
+              `✅ Fee-supporting swap complete on ${routerName}! Hash: ${receipt.hash}`
             );
 
-            console.log(`Fee-supporting transaction sent on ${routerName}, waiting for confirmation...`);
-            const receipt = await tx.wait();
-            console.log(`✅ Fee-supporting swap complete on ${routerName}! Hash: ${receipt.hash}`);
-            
-            const balance = await checkTokenInfo(tokenAddress);
             txResult = {
               txHash: receipt.hash,
-              tokenInfo: balance,
+              tokenInfo: tokenInfo,
             };
 
             // Send notification
-            await sendSwapExecutionMessage({
-              tokenAddress,
-              ethAmount: parseFloat(ethers.formatEther(amounts[1])),
-              routerName,
-              txHash: receipt.hash,
-              walletAddress: wallet.address,
-              isSell: true
-            });
-            
+            // await sendSwapExecutionMessage({
+            //   tokenAddress,
+            //   ethAmount: parseFloat(ethers.formatEther(amounts[1])),
+            //   routerName,
+            //   txHash: receipt.hash,
+            //   walletAddress: wallet.address,
+            //   isSell: true,
+            // });
+
             break; // Exit the loop if successful
           } catch (feeError) {
-            console.error(`❌ Fee-supporting swap also failed on ${routerName}: ${feeError}`);
+            console.error(
+              `❌ Fee-supporting swap also failed on ${routerName}: ${feeError}`
+            );
             // Continue to next router
           }
         }

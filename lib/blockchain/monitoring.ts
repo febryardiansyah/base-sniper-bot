@@ -1,12 +1,13 @@
 import { ethers } from "ethers";
 import { config } from "../core/config";
 import { BigBuyData } from "../core/types";
-import { factories, routers, factoryNames, routerNames, getTokenInfo } from "./contracts";
+import { factories, routers, factoryNames, routerNames } from "./contracts";
 import { analyzePair, shouldAlert, shouldAutoSwap, getNonWETHToken } from "./pairAnalyzer";
 import { sendPairAlert, sendBuyAlert } from "../services/telegram";
 import { wsProvider } from "./providers";
 import { sleep } from "../utils/utils";
 import { buyTokenWithETH } from "../services/swap";
+import { checkTokenInfo } from "../services/info";
 
 // Tracked pairs and transactions to avoid duplicates
 const trackedPairs = new Set<string>();
@@ -84,7 +85,7 @@ export function monitorBigBuys(): void {
           const ethAmount = parseFloat(ethers.formatEther(amountIn));
           
           if (ethAmount >= config.BIG_BUY_THRESHOLD) {
-            const tokenInfo = await getTokenInfo(outputToken);
+            const tokenInfo = await checkTokenInfo(outputToken);
             const buyData: BigBuyData = {
               sender,
               ethAmount,

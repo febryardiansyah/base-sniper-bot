@@ -1,17 +1,8 @@
-// Token information interface
-export interface TokenInfo {
-  address: string;
-  name: string;
-  symbol: string;
-  decimals: number;
-  totalSupply: string;
-}
-
 // Pair information interface
 export interface PairInfo {
   pairAddress: string;
-  token0: TokenInfo;
-  token1: TokenInfo;
+  token0: ITokenInfo;
+  token1: ITokenInfo;
   reserve0: string;
   reserve1: string;
   liquidityETH: number;
@@ -21,7 +12,7 @@ export interface PairInfo {
 export interface BigBuyData {
   sender: string;
   ethAmount: number;
-  tokenInfo: TokenInfo | null;
+  tokenInfo: ITokenInfo | null;
   routerName: string;
   txHash: string;
 }
@@ -39,9 +30,12 @@ export interface AutoSwapConfig {
 }
 
 export interface ITokenInfo {
-  balance: BigNumber;
-  decimals: number;
+  address: string;
+  name: string;
   symbol: string;
+  decimals: number;
+  totalSupply: string;
+  balance: BigNumber;
 }
 
 export interface ISwapResult {
