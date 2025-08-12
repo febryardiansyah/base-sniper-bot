@@ -9,6 +9,8 @@ A powerful TypeScript bot that monitors the Base blockchain for new token launch
 - **Big Buy Alerts**: Tracks large purchases across multiple DEX routers
 - **Telegram Integration**: Sends formatted alerts with token details and transaction information
 - **Multi-DEX Support**: Monitors both Uniswap V2 and Aerodrome on Base Chain
+- **Universal Router Integration**: 🆕 Support for Uniswap's Universal Router (V2, V3, V4 unified)
+- **Smart Fallback System**: Automatically falls back to legacy routers if Universal Router fails
 - **Smart Filtering**: Avoids spam tokens with configurable supply thresholds
 - **Real-time Monitoring**: WebSocket connection for instant notifications
 - **Auto Swap**: Automatically buys tokens when new high-liquidity pairs are detected (optional)
@@ -60,6 +62,11 @@ TELEGRAM_CHAT_ID=YOUR_TELEGRAM_CHAT_ID
 BIG_BUY_THRESHOLD=1.0  # Minimum ETH amount to trigger big buy alert
 MIN_LIQUIDITY_ETH=5.0  # Minimum liquidity in ETH to trigger new token alert
 MAX_SUPPLY_THRESHOLD=1000000000  # Maximum token supply to consider
+
+# Universal Router (Recommended for new integrations)
+UNIVERSAL_ROUTER=0x6ff5693b99212da76ad316178a184ab56d299b43
+PERMIT2_ADDRESS=0x000000000022D473030F116dDEE9F6B43aC78BA3
+USE_UNIVERSAL_ROUTER=true  # Enable Universal Router for better liquidity access
 
 # Auto Swap Configuration
 WALLET_PRIVATE_KEY=YOUR_WALLET_PRIVATE_KEY  # Required for auto swap
@@ -179,12 +186,43 @@ The bot operates in three main monitoring modes:
 - **Uniswap V2 Factory**: `0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6`
 - **Aerodrome Factory**: `0x420DD381b31aEf6683db96b3aaC7FF414b03B0b`
 
-### Routers (Swap Monitoring)
+### Routers (Swap Execution)
+- **Universal Router** 🆕: `0x6ff5693b99212da76ad316178a184ab56d299b43` (Recommended)
 - **Uniswap V2 Router**: `0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24`
 - **Aerodrome Router**: `0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43`
 
 ### Key Addresses
 - **WETH (Base)**: `0x4200000000000000000000000000000000000006`
+- **Permit2**: `0x000000000022D473030F116dDEE9F6B43aC78BA3`
+
+## Universal Router Migration 🔄
+
+This project now supports **Uniswap's Universal Router**, which is the recommended entry point for all ERC20 swaps. The Universal Router provides:
+
+- **Unified Access**: Supports Uniswap V2, V3, and V4 in a single contract
+- **Better Liquidity**: Access to more liquidity sources
+- **Gas Efficiency**: Optimized for lower gas costs
+- **Future-Proof**: Official Uniswap recommendation
+
+### Migration Guide
+
+1. **Enable Universal Router**:
+   ```env
+   USE_UNIVERSAL_ROUTER=true
+   ```
+
+2. **Fallback Strategy**: The bot automatically falls back to legacy routers if Universal Router fails
+
+3. **Test First**: Start with small amounts to verify functionality
+
+For detailed migration information, see [UNIVERSAL_ROUTER_MIGRATION.md](./UNIVERSAL_ROUTER_MIGRATION.md).
+
+### Testing Universal Router
+
+Run the test script to verify Universal Router integration:
+```bash
+node test-universal-router.js
+```
 
 ## Customization 🎛️
 

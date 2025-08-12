@@ -289,7 +289,7 @@ export function setupCommandHandlers(): void {
       await telegramBot.sendMessage(chatId, `🔄 Processing swap to sell ${tokenAmount === 'max' ? 'all' : tokenAmount} tokens of ${tokenAddress} for ETH...`);
 
       // Execute the swap
-      const sellResult = await sellTokenForETH(tokenAddress, tokenAmount, routerIndex, slippage);
+      const sellResult = await sellTokenForETH(tokenAddress, tokenAmount, routerIndex);
 
       if (sellResult) {
         await telegramBot.sendMessage(chatId,

@@ -4,6 +4,11 @@ import { baseProvider } from "../blockchain/providers";
 import { routerNames } from "../blockchain/contracts";
 import { ISwapResult } from "../core/types";
 import { checkTokenInfo } from "./info";
+import { 
+  buyTokenWithUniversalRouter, 
+  sellTokenWithUniversalRouter, 
+  isUniversalRouterEnabled 
+} from "./universalRouterSwap";
 
 // Complete Router ABI with swap functions
 const routerAbi = [
@@ -46,6 +51,20 @@ export async function buyTokenWithETH(
     if (!config.WALLET_PRIVATE_KEY) {
       console.error("❌ No wallet private key provided for auto swap");
       throw new Error("No wallet private key provided");
+    }
+
+    // Try Universal Router first if enabled
+    if (isUniversalRouterEnabled()) {
+      console.log("🔄 Attempting swap with Universal Router...");
+      const universalResult = await buyTokenWithUniversalRouter(
+        tokenAddress,
+        ethAmount,
+        config.AUTO_SWAP_SLIPPAGE_PERCENT
+      );
+      if (universalResult) {
+        return universalResult;
+      }
+      console.log("⚠️ Universal Router failed, falling back to legacy routers...");
     }
 
     // path for the swap (ETH -> Token)
@@ -193,13 +212,26 @@ export async function buyTokenWithETH(
 export async function sellTokenForETH(
   tokenAddress: string,
   tokenAmount: string,
-  routerIndex: number = 0,
   slippagePercent: number = 5
 ): Promise<ISwapResult | null> {
   try {
     if (!config.WALLET_PRIVATE_KEY) {
-      console.error("❌ No wallet private key provided for auto swap");
+      console.error("❌ No wallet private key provided for swap");
       throw new Error("No wallet private key provided");
+    }
+
+    // Try Universal Router first if enabled
+    if (isUniversalRouterEnabled()) {
+      console.log("🔄 Attempting sell with Universal Router...");
+      const universalResult = await sellTokenWithUniversalRouter(
+        tokenAddress,
+        tokenAmount,
+        slippagePercent
+      );
+      if (universalResult) {
+        return universalResult;
+      }
+      console.log("⚠️ Universal Router failed, falling back to legacy routers...");
     }
 
     // Create ERC20 token contract instance
