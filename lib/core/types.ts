@@ -29,7 +29,7 @@ export interface AutoSwapConfig {
   gasPrice?: string; // Optional gas price in gwei
 }
 
-export interface ITokenInfo {
+export interface IUserTokenInfo {
   address: string;
   name: string;
   symbol: string;
@@ -40,32 +40,13 @@ export interface ITokenInfo {
 
 export interface ISwapResult {
   txHash: string;
-  tokenInfo: ITokenInfo;
+  tokenInfo: IUserTokenInfo;
 }
 
-// Multi-hop swap path interface
-export interface IHopPath {
-  tokenAddress: string;
-  poolFee?: number; // For V3 pools
-  router?: string; // Specific router for this hop
+export interface ITokenInfo {
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  totalSupply: string;
 }
-
-// Multi-hop swap configuration
-export interface IMultiHopSwapConfig {
-  inputToken: string;
-  outputToken: string;
-  path: IHopPath[];
-  amountIn: string;
-  amountOutMin: string;
-  slippagePercent: number;
-  deadline?: number;
-}
-
-// Multi-hop swap result with path information
-export interface IMultiHopSwapResult extends ISwapResult {
-  path: string[];
-  intermediateAmounts: string[];
-  totalGasUsed: string;
-  effectivePrice: string;
-}
-

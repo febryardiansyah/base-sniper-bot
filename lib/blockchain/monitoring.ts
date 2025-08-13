@@ -7,7 +7,7 @@ import { sendPairAlert, sendBuyAlert } from "../services/telegram";
 import { wsProvider } from "./providers";
 import { sleep } from "../utils/utils";
 import { buyTokenWithETH } from "../services/swap";
-import { checkTokenInfo } from "../services/info";
+import { checkTokenInfo, checkUserTokenInfo } from "../services/info";
 
 // Tracked pairs and transactions to avoid duplicates
 const trackedPairs = new Set<string>();

@@ -4,8 +4,10 @@ import { config } from "../core/config";
 import { PairInfo, BigBuyData } from "../core/types";
 import { getNonWETHToken } from "../blockchain/pairAnalyzer";
 import { buyTokenWithETH, sellTokenForETH } from "./swap";
+import { buyTokenWithRelayRouter, sellTokenWithRelayRouter } from "./relayRouterSwap";
 import { ethers } from "ethers";
-import { checkAddressInfo, checkTokenInfo } from "./info";
+import { checkAddressInfo, checkUserTokenInfo } from "./info";
+import { commandList } from "../utils/utils";
 
 // Initialize Telegram bot
 export const telegramBot = new TelegramBot(config.TELEGRAM_BOT_TOKEN, { polling: true });
@@ -22,7 +24,7 @@ export async function sendPairAlert(pairInfo: PairInfo, exchange: string): Promi
     `💧 Liquidity: *${pairInfo.liquidityETH.toFixed(2)} ETH*\n` +
     `📊 Total Supply: *${new BigNumber(nonWETHToken.totalSupply).dividedBy(new BigNumber(10).pow(nonWETHToken.decimals)).toFormat()}*\n` +
     `🔗 Pair: \`${pairInfo.pairAddress}\`\n` +
-    `🔗 *DexScreener URL:* \[Open Link](http://dexscreener.com/base/${nonWETHToken.address})\`\n\n` +
+    `🔗 DexScreener URL: [Open Link](http://dexscreener.com/base/${nonWETHToken.address})\n\n` +
     `⚡ *SNIPE OPPORTUNITY DETECTED!*`;
 
   try {
@@ -174,8 +176,17 @@ export function setupCommandHandlers(): void {
       // Send processing message
       await telegramBot.sendMessage(chatId, `🔄 Processing swap of ${ethAmount} ETH for token ${tokenAddress}`);
 
-      // Execute the swap
-      const buyResult = await buyTokenWithETH(tokenAddress, ethAmount);
+      // Execute the swap using Relay Router
+      let buyResult = await buyTokenWithRelayRouter(tokenAddress, ethAmount, slippage);
+
+      // If Relay Router fails, fall back to traditional swap
+      if (!buyResult) {
+        console.log("⚠️ Relay Router swap failed, falling back to traditional swap...");
+        buyResult = await buyTokenWithETH(tokenAddress, ethAmount);
+        if (buyResult) {
+          await telegramBot.sendMessage(chatId, "⚠️ Relay Router swap failed, used traditional swap instead.");
+        }
+      }
 
       if (buyResult) {
         await telegramBot.sendMessage(chatId,
@@ -210,15 +221,11 @@ export function setupCommandHandlers(): void {
       return;
     }
 
-    const helpMessage =
-      "🤖 *Base Chain Sniper Bot Commands*\n\n" +
-      "/buy <token_address> <eth_amount> - *Buy tokens with ETH*\n" +
-      "/sell <token_address> <token_amount> - *Sell tokens for ETH*\n" +
-      // "/buy <token_address> <eth_amount> [router_index] [slippage] - Buy tokens with ETH\n" +
-      // "  Example: /buy 0x1234...abcd 0.1 0 5\n" +
-      // "  Router index: 0 for Uniswap V2, 1 for Aerodrome\n" +
-      // "  Slippage: percentage (default 5%)\n\n" +
-      "/help - *Show this help message*";
+    let helpMessage = "🤖 *Base Chain Sniper Bot Commands*\n";
+
+    for (var e of commandList) {
+      helpMessage += `\n${e.command} - *${e.description}*`;
+    }
 
     await telegramBot.sendMessage(chatId, helpMessage, { parse_mode: "Markdown" });
   });
@@ -288,8 +295,17 @@ export function setupCommandHandlers(): void {
       // Send processing message
       await telegramBot.sendMessage(chatId, `🔄 Processing swap to sell ${tokenAmount === 'max' ? 'all' : tokenAmount} tokens of ${tokenAddress} for ETH...`);
 
-      // Execute the swap
-      const sellResult = await sellTokenForETH(tokenAddress, tokenAmount, routerIndex);
+      // Execute the swap using Relay Router
+      let sellResult = await sellTokenWithRelayRouter(tokenAddress, tokenAmount, slippage);
+
+      // If Relay Router fails, fall back to traditional swap
+      if (!sellResult) {
+        console.log("⚠️ Relay Router swap failed, falling back to traditional swap...");
+        sellResult = await sellTokenForETH(tokenAddress, tokenAmount, routerIndex);
+        if (sellResult) {
+          await telegramBot.sendMessage(chatId, "⚠️ Relay Router swap failed, used traditional swap instead.");
+        }
+      }
 
       if (sellResult) {
         await telegramBot.sendMessage(chatId,
@@ -343,7 +359,7 @@ export function setupCommandHandlers(): void {
     const tokenAddress = args[0];
 
     try {
-      const balance = await checkTokenInfo(tokenAddress);
+      const balance = await checkUserTokenInfo(tokenAddress);
       await telegramBot.sendMessage(chatId,
         `\n📊 *Token Balance*: ${ethers.formatUnits(balance.balance.toString(), balance.decimals)} *${balance.symbol}*`,
         { parse_mode: "Markdown" }

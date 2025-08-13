@@ -3,17 +3,7 @@ import { config } from "../core/config";
 import { baseProvider } from "../blockchain/providers";
 import { routerNames } from "../blockchain/contracts";
 import { ISwapResult } from "../core/types";
-import { checkTokenInfo } from "./info";
-import { 
-  buyTokenWithUniversalRouter, 
-  sellTokenWithUniversalRouter, 
-  isUniversalRouterEnabled 
-} from "./universalRouterSwap";
-import { 
-  smartBuyWithMultiHop, 
-  isMultiHopBeneficial,
-  getMultiHopQuote 
-} from "./multiHopSwap";
+import { checkUserTokenInfo } from "./info";
 
 // Complete Router ABI with swap functions
 const routerAbi = [
@@ -58,47 +48,10 @@ export async function buyTokenWithETH(
       throw new Error("No wallet private key provided");
     }
 
-    // Try Universal Router first if enabled
-    if (isUniversalRouterEnabled()) {
-      console.log("🔄 Attempting swap with Universal Router...");
-      const universalResult = await buyTokenWithUniversalRouter(
-        tokenAddress,
-        ethAmount,
-        config.AUTO_SWAP_SLIPPAGE_PERCENT
-      );
-      if (universalResult) {
-        return universalResult;
-      }
-      console.log("⚠️ Universal Router failed, checking multi-hop options...");
-    }
-
     const amountIn = ethers.parseEther(ethAmount.toString());
-    
+
     // Check if multi-hop routing would be beneficial
     console.log("🔍 Analyzing routing options...");
-    const isMultiHopBetter = await isMultiHopBeneficial(
-      config.WETH_ADDRESS,
-      tokenAddress,
-      amountIn.toString()
-    );
-    
-    if (isMultiHopBetter) {
-      console.log("🚀 Multi-hop routing detected as beneficial, attempting smart swap...");
-      const multiHopResult = await smartBuyWithMultiHop(
-        tokenAddress,
-        ethAmount,
-        config.AUTO_SWAP_SLIPPAGE_PERCENT
-      );
-      
-      if (multiHopResult) {
-        console.log(`✅ Multi-hop swap successful via path: ${multiHopResult.path.join(' -> ')}`);
-        return {
-          txHash: multiHopResult.txHash,
-          tokenInfo: multiHopResult.tokenInfo
-        };
-      }
-      console.log("⚠️ Multi-hop swap failed, falling back to direct routing...");
-    }
 
     // path for the swap (ETH -> Token)
     const path = [config.WETH_ADDRESS, tokenAddress];
@@ -167,7 +120,7 @@ export async function buyTokenWithETH(
           `Minimum output: ${ethers.formatUnits(amountOutMin, 18)} tokens`
         );
 
-        const tokenInfo = await checkTokenInfo(tokenAddress);
+        const tokenInfo = await checkUserTokenInfo(tokenAddress);
         console.log(`Swapping on ${routerName}...`);
 
         // Try regular swap first
@@ -226,7 +179,6 @@ export async function buyTokenWithETH(
             console.error(
               `❌ Fee-supporting swap also failed on ${routerName}: ${feeError}`
             );
-            // Continue to next router
           }
         }
       } catch (error) {
@@ -252,20 +204,6 @@ export async function sellTokenForETH(
       throw new Error("No wallet private key provided");
     }
 
-    // Try Universal Router first if enabled
-    if (isUniversalRouterEnabled()) {
-      console.log("🔄 Attempting sell with Universal Router...");
-      const universalResult = await sellTokenWithUniversalRouter(
-        tokenAddress,
-        tokenAmount,
-        slippagePercent
-      );
-      if (universalResult) {
-        return universalResult;
-      }
-      console.log("⚠️ Universal Router failed, falling back to legacy routers...");
-    }
-
     // Create ERC20 token contract instance
     const tokenContract = new ethers.Contract(
       tokenAddress,
@@ -274,7 +212,7 @@ export async function sellTokenForETH(
     );
 
     // Get token decimals
-    const tokenInfo = await checkTokenInfo(tokenAddress);
+    const tokenInfo = await checkUserTokenInfo(tokenAddress);
 
     // If tokenAmount is 'max', get the wallet's token balance
     let amount;

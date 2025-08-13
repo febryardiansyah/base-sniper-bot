@@ -1,16 +1,16 @@
 import { ethers } from "ethers";
 import { config } from "../core/config";
-import { baseProvider } from "../blockchain/providers";
-import { ITokenInfo } from "../core/types";
+import { baseProvider, httpProvider } from "../blockchain/providers";
+import { IUserTokenInfo, ITokenInfo } from "../core/types";
 import { erc20Abi } from "../blockchain/contracts";
 
-export async function checkTokenInfo(
-  tokenAdrress: string
-): Promise<ITokenInfo> {
+export async function checkUserTokenInfo(
+  tokenAddress: string,
+): Promise<IUserTokenInfo> {
   const wallet = new ethers.Wallet(config.WALLET_PRIVATE_KEY!, baseProvider);
 
   const tokenContract = new ethers.Contract(
-    tokenAdrress,
+    tokenAddress,
     erc20Abi,
     wallet.provider
   );
@@ -25,7 +25,7 @@ export async function checkTokenInfo(
     ]);
 
     return {
-      address: tokenAdrress,
+      address: tokenAddress,
       name,
       balance,
       decimals,
@@ -33,11 +33,37 @@ export async function checkTokenInfo(
       totalSupply: totalSupply.toString(),
     };
   } catch (error) {
-    throw `Error checking token balance: ${error}`;
+    console.error(`Error getting token info for ${tokenAddress}:`, error);
+    throw `Error getting token info: ${error}`;
+
   }
 }
 
 export function checkAddressInfo(): string {
   const wallet = new ethers.Wallet(config.WALLET_PRIVATE_KEY!);
   return `https://debank.com/profile/${wallet.address}`;
+}
+
+export async function checkTokenInfo(tokenAddress: string): Promise<ITokenInfo | null> {
+  try {
+    const tokenContract = new ethers.Contract(tokenAddress, erc20Abi, httpProvider);
+    
+    const [name, symbol, decimals, totalSupply] = await Promise.all([
+      tokenContract.name().catch(() => "Unknown"),
+      tokenContract.symbol().catch(() => "???"),
+      tokenContract.decimals().catch(() => 18),
+      tokenContract.totalSupply().catch(() => "0")
+    ]);
+    
+    return {
+      address: tokenAddress,
+      name,
+      symbol,
+      decimals,
+      totalSupply: totalSupply.toString()
+    };
+  } catch (error) {
+    console.error(`Error getting token info for ${tokenAddress}:`, error);
+    return null;
+  }
 }
