@@ -9,6 +9,11 @@ import {
   sellTokenWithUniversalRouter, 
   isUniversalRouterEnabled 
 } from "./universalRouterSwap";
+import { 
+  smartBuyWithMultiHop, 
+  isMultiHopBeneficial,
+  getMultiHopQuote 
+} from "./multiHopSwap";
 
 // Complete Router ABI with swap functions
 const routerAbi = [
@@ -64,12 +69,39 @@ export async function buyTokenWithETH(
       if (universalResult) {
         return universalResult;
       }
-      console.log("⚠️ Universal Router failed, falling back to legacy routers...");
+      console.log("⚠️ Universal Router failed, checking multi-hop options...");
+    }
+
+    const amountIn = ethers.parseEther(ethAmount.toString());
+    
+    // Check if multi-hop routing would be beneficial
+    console.log("🔍 Analyzing routing options...");
+    const isMultiHopBetter = await isMultiHopBeneficial(
+      config.WETH_ADDRESS,
+      tokenAddress,
+      amountIn.toString()
+    );
+    
+    if (isMultiHopBetter) {
+      console.log("🚀 Multi-hop routing detected as beneficial, attempting smart swap...");
+      const multiHopResult = await smartBuyWithMultiHop(
+        tokenAddress,
+        ethAmount,
+        config.AUTO_SWAP_SLIPPAGE_PERCENT
+      );
+      
+      if (multiHopResult) {
+        console.log(`✅ Multi-hop swap successful via path: ${multiHopResult.path.join(' -> ')}`);
+        return {
+          txHash: multiHopResult.txHash,
+          tokenInfo: multiHopResult.tokenInfo
+        };
+      }
+      console.log("⚠️ Multi-hop swap failed, falling back to direct routing...");
     }
 
     // path for the swap (ETH -> Token)
     const path = [config.WETH_ADDRESS, tokenAddress];
-    const amountIn = ethers.parseEther(ethAmount.toString());
 
     let txResult: ISwapResult | null = null;
 

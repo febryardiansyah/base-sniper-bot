@@ -43,3 +43,29 @@ export interface ISwapResult {
   tokenInfo: ITokenInfo;
 }
 
+// Multi-hop swap path interface
+export interface IHopPath {
+  tokenAddress: string;
+  poolFee?: number; // For V3 pools
+  router?: string; // Specific router for this hop
+}
+
+// Multi-hop swap configuration
+export interface IMultiHopSwapConfig {
+  inputToken: string;
+  outputToken: string;
+  path: IHopPath[];
+  amountIn: string;
+  amountOutMin: string;
+  slippagePercent: number;
+  deadline?: number;
+}
+
+// Multi-hop swap result with path information
+export interface IMultiHopSwapResult extends ISwapResult {
+  path: string[];
+  intermediateAmounts: string[];
+  totalGasUsed: string;
+  effectivePrice: string;
+}
+
