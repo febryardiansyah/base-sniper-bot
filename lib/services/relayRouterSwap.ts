@@ -6,7 +6,6 @@ import {
   IRelayQuoteResponse,
   IRelaySwapStatusResponse,
   ISwapResult,
-  IUserTokenInfo,
 } from "../core/types";
 import { checkUserTokenInfo } from "./info";
 

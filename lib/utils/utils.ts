@@ -9,14 +9,14 @@ interface ICommand {
 }
 
 export const commandList: ICommand[] = [
-  // {
-  //   command: "/start",
-  //   description: "Start the bot"
-  // },
-  // {
-  //   command: "/stop",
-  //   description: "Stop the bot"
-  // },
+  {
+    command: "/start",
+    description: "Start monitoring"
+  },
+  {
+    command: "/stop",
+    description: "Stop monitoring"
+  },
   {
     command: "/help",
     description: "Show this help message"

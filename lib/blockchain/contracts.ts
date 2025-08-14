@@ -7,7 +7,6 @@ import factoryAbi from "../../abi/UniswapV2Factory.json";
 import pairAbi from "../../abi/UniswapV2Pair.json";
 import erc20Abi from "../../abi/ERC20.json";
 import routerAbi from "../../abi/Router.json";
-import universalRouterAbi from "../../abi/UniversalRouter.json";
 
 export { erc20Abi };
 

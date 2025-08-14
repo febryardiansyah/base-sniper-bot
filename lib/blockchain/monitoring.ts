@@ -13,8 +13,10 @@ import { checkTokenInfo, checkUserTokenInfo } from "../services/info";
 const trackedPairs = new Set<string>();
 const processedTransactions = new Set<string>();
 
+let isMonitoring = false;
+
 // Monitor new pair creation events
-export function monitorNewPairs(): void {
+function monitorNewPairs(): void {
   factories.forEach((factory, index) => {
     const factoryName = factoryNames[index];
     
@@ -36,22 +38,6 @@ export function monitorNewPairs(): void {
         
         if (isShouldAlert) {
           await sendPairAlert(pairInfo, factoryName);
-          
-          // Check if auto swap is enabled and should be executed
-          if (config.AUTO_SWAP_ENABLED && pairInfo && shouldAutoSwap(pairInfo)) {
-            try {
-              const nonWETHToken = getNonWETHToken(pairInfo);
-              console.log(`🤖 Auto swap triggered for ${nonWETHToken.symbol}`);
-              
-              // Execute the swap
-              await buyTokenWithETH(
-                nonWETHToken.address,
-                config.AUTO_SWAP_BUY_AMOUNT,
-              );
-            } catch (swapError) {
-              console.error(`Error executing auto swap:`, swapError);
-            }
-          }
         }
       } catch (error) {
         console.error(`Error processing new pair ${pairAddress}:`, error);
@@ -60,8 +46,15 @@ export function monitorNewPairs(): void {
   });
 }
 
+function stopMonitorNewPairs(): void {
+  factories.forEach((factory) => {
+    factory.off("PairCreated");
+    factory.removeAllListeners();
+  });
+}
+
 // Monitor big buy events on routers
-export function monitorBigBuys(): void {
+function monitorBigBuys(): void {
   routers.forEach((router, index) => {
     const routerName = routerNames[index];
     
@@ -104,8 +97,30 @@ export function monitorBigBuys(): void {
 }
 
 // Monitor blocks for logging
-export function monitorBlocks(): void {
+function monitorBlocks(): void {
   wsProvider.on("block", (blockNumber) => {
     console.log(`📦 Block ${blockNumber}`);
   });
+}
+
+function stopMonitorBlocks(): void {
+  wsProvider.off("block");
+  wsProvider.removeAllListeners();
+  wsProvider.destroy();
+}
+
+export function startMonitor(): void {
+  isMonitoring = true;
+  monitorNewPairs();
+  monitorBlocks();
+}
+
+export function stopMonitor(): void {
+  isMonitoring = false;
+  stopMonitorNewPairs();
+  stopMonitorBlocks();
+}
+
+export function statusMonitoring(): boolean {
+  return isMonitoring;
 }

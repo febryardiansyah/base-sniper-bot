@@ -1,6 +1,5 @@
 import { factories, routers } from "./blockchain/contracts";
 import { sendStartupMessage, setupCommandHandlers } from "./services/telegram";
-import { monitorNewPairs, monitorBigBuys, monitorBlocks } from "./blockchain/monitoring";
 import { config } from "./core/config";
 
 export class BaseChainSniperBot {
@@ -9,11 +8,6 @@ export class BaseChainSniperBot {
     console.log(`📡 Monitoring ${factories.length} factories and ${routers.length} routers`);
 
     await sendStartupMessage();
-
-    // Start monitoring services
-    monitorNewPairs();
-    monitorBigBuys();
-    monitorBlocks();
 
     // Set up Telegram command handlers
     setupCommandHandlers();
