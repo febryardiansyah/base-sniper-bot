@@ -13,13 +13,11 @@ export interface Config {
   MIN_LIQUIDITY_ETH: number;
   MAX_SUPPLY_THRESHOLD: number;
   WETH_ADDRESS: string;
+  ETH_ADDRESS: string;
   UNISWAP_V2_FACTORY: string;
   UNISWAP_V2_ROUTER: string;
   AERODROME_FACTORY: string;
   AERODROME_ROUTER: string;
-  // Universal Router (recommended for new swaps)
-  UNIVERSAL_ROUTER: string;
-  PERMIT2_ADDRESS: string;
   BLOCK_CONFIRMATION_COUNT: number;
   RETRY_ATTEMPTS: number;
   RETRY_DELAY_MS: number;
@@ -33,8 +31,6 @@ export interface Config {
   AUTO_SWAP_MAX_SUPPLY_THRESHOLD: number;
   AUTO_SWAP_GAS_LIMIT?: number;
   AUTO_SWAP_GAS_PRICE?: string;
-  // Universal Router settings
-  USE_UNIVERSAL_ROUTER: boolean;
 }
 
 // Configuration object
@@ -47,14 +43,12 @@ export const config: Config = {
   BIG_BUY_THRESHOLD: parseFloat(process.env.BIG_BUY_THRESHOLD || "1.0"),
   MIN_LIQUIDITY_ETH: parseFloat(process.env.MIN_LIQUIDITY_ETH || "5.0"),
   MAX_SUPPLY_THRESHOLD: parseFloat(process.env.MAX_SUPPLY_THRESHOLD || "1000000000"),
-  WETH_ADDRESS: process.env.WETH_ADDRESS!.toLowerCase(),
+  WETH_ADDRESS: '0x4200000000000000000000000000000000000006',
   UNISWAP_V2_FACTORY: process.env.UNISWAP_V2_FACTORY!,
   UNISWAP_V2_ROUTER: process.env.UNISWAP_V2_ROUTER!,
   AERODROME_FACTORY: process.env.AERODROME_FACTORY!,
   AERODROME_ROUTER: process.env.AERODROME_ROUTER!,
   // Universal Router configuration (Base chain)
-  UNIVERSAL_ROUTER: process.env.UNIVERSAL_ROUTER || "0x6ff5693b99212da76ad316178a184ab56d299b43",
-  PERMIT2_ADDRESS: process.env.PERMIT2_ADDRESS || "0x000000000022D473030F116dDEE9F6B43aC78BA3",
   BLOCK_CONFIRMATION_COUNT: parseInt(process.env.BLOCK_CONFIRMATION_COUNT || "3"),
   RETRY_ATTEMPTS: parseInt(process.env.RETRY_ATTEMPTS || "3"),
   RETRY_DELAY_MS: parseInt(process.env.RETRY_DELAY_MS || "1000"),
@@ -69,5 +63,5 @@ export const config: Config = {
   AUTO_SWAP_GAS_LIMIT: process.env.AUTO_SWAP_GAS_LIMIT ? parseInt(process.env.AUTO_SWAP_GAS_LIMIT) : undefined,
   AUTO_SWAP_GAS_PRICE: process.env.AUTO_SWAP_GAS_PRICE,
   // Universal Router settings
-  USE_UNIVERSAL_ROUTER: process.env.USE_UNIVERSAL_ROUTER === "true"
+  ETH_ADDRESS: '0x0000000000000000000000000000000000000000',
 };

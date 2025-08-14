@@ -24,8 +24,7 @@ export async function sendPairAlert(pairInfo: PairInfo, exchange: string): Promi
     `💧 Liquidity: *${pairInfo.liquidityETH.toFixed(2)} ETH*\n` +
     `📊 Total Supply: *${new BigNumber(nonWETHToken.totalSupply).dividedBy(new BigNumber(10).pow(nonWETHToken.decimals)).toFormat()}*\n` +
     `🔗 Pair: \`${pairInfo.pairAddress}\`\n` +
-    `🔗 DexScreener URL: [Open Link](http://dexscreener.com/base/${nonWETHToken.address})\n\n` +
-    `⚡ *SNIPE OPPORTUNITY DETECTED!*`;
+    `🔗 DexScreener URL: [Open Link](http://dexscreener.com/base/${nonWETHToken.address})`;
 
   try {
     await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {

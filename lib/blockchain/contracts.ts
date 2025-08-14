@@ -23,12 +23,6 @@ export const routers = [
   new ethers.Contract(config.AERODROME_ROUTER, routerAbi, wsProvider),
 ];
 
-// Universal Router contract
-export const universalRouter = new ethers.Contract(
-  config.UNIVERSAL_ROUTER,
-  universalRouterAbi,
-  wsProvider
-);
 
 // Factory names for logging
 export const factoryNames = ["Uniswap V2", "Aerodrome"];
