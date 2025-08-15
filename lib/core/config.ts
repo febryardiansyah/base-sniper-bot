@@ -31,6 +31,7 @@ export interface Config {
   AUTO_SWAP_MAX_SUPPLY_THRESHOLD: number;
   AUTO_SWAP_GAS_LIMIT?: number;
   AUTO_SWAP_GAS_PRICE?: string;
+  ZORA_FACTORY: string;
 }
 
 // Configuration object
@@ -61,6 +62,6 @@ export const config: Config = {
   AUTO_SWAP_MAX_SUPPLY_THRESHOLD: parseFloat("1000000000"),
   AUTO_SWAP_GAS_LIMIT: process.env.AUTO_SWAP_GAS_LIMIT ? parseInt(process.env.AUTO_SWAP_GAS_LIMIT) : undefined,
   AUTO_SWAP_GAS_PRICE: process.env.AUTO_SWAP_GAS_PRICE,
-  // Universal Router settings
   ETH_ADDRESS: '0x0000000000000000000000000000000000000000',
+  ZORA_FACTORY: process.env.ZORA_FACTORY!,
 };

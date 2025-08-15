@@ -1,8 +1,19 @@
 import { ethers } from "ethers";
 import { config } from "../core/config";
-import { BigBuyData } from "../core/types";
-import { factories, routers, factoryNames, routerNames } from "./contracts";
-import { analyzePair, shouldAlert, shouldAutoSwap, getNonWETHToken } from "./pairAnalyzer";
+import { BigBuyData, PairInfo } from "../core/types";
+import {
+  factories,
+  routers,
+  factoryNames,
+  routerNames,
+  zoraFactory,
+} from "./contracts";
+import {
+  analyzePair,
+  shouldAlert,
+  shouldAutoSwap,
+  getNonWETHToken,
+} from "./pairAnalyzer";
 import { sendPairAlert, sendBuyAlert } from "../services/telegram";
 import { wsProvider } from "./providers";
 import { sleep } from "../utils/utils";
@@ -15,35 +26,62 @@ const processedTransactions = new Set<string>();
 
 let isMonitoring = false;
 
+async function onCoinCreated(
+  caller: string,
+  payoutRecipient: string,
+  platformReferrer: string,
+  currency: string,
+  uri: string,
+  name: string,
+  symbol: string,
+  coin: string,
+  poolKey: any,
+  poolKeyHash: string,
+  version: string
+): Promise<void> {
+  console.log(`🆕 New coin created on Zora: ${coin}`);
+}
+
 // Monitor new pair creation events
 function monitorNewPairs(): void {
   factories.forEach((factory, index) => {
     const factoryName = factoryNames[index];
-    
-    factory.on("PairCreated", async (token0: string, token1: string, pairAddress: string, pairIndex: bigint) => {
-      try {
-        console.log(`🆕 New pair detected on ${factoryName}: ${pairAddress}`);
-        
-        if (trackedPairs.has(pairAddress.toLowerCase())) {
-          return; // Already processed
+
+    factory.on(
+      "PairCreated",
+      async (
+        token0: string,
+        token1: string,
+        pairAddress: string,
+        pairIndex: bigint
+      ) => {
+        try {
+          console.log(`🆕 New pair detected on ${factoryName}: ${pairAddress}`);
+
+          if (trackedPairs.has(pairAddress.toLowerCase())) {
+            return; // Already processed
+          }
+
+          trackedPairs.add(pairAddress.toLowerCase());
+
+          // Wait for confirmations
+          await sleep(config.RETRY_DELAY_MS * config.BLOCK_CONFIRMATION_COUNT);
+
+          const pairInfo = await analyzePair(pairAddress, token0, token1);
+          const isShouldAlert = pairInfo && shouldAlert(pairInfo);
+
+          if (isShouldAlert) {
+            await sendPairAlert(pairInfo, factoryName);
+          }
+        } catch (error) {
+          console.error(`Error processing new pair ${pairAddress}:`, error);
         }
-        
-        trackedPairs.add(pairAddress.toLowerCase());
-        
-        // Wait for confirmations
-        await sleep(config.RETRY_DELAY_MS * config.BLOCK_CONFIRMATION_COUNT);
-        
-        const pairInfo = await analyzePair(pairAddress, token0, token1);
-        const isShouldAlert = pairInfo && shouldAlert(pairInfo);
-        
-        if (isShouldAlert) {
-          await sendPairAlert(pairInfo, factoryName);
-        }
-      } catch (error) {
-        console.error(`Error processing new pair ${pairAddress}:`, error);
       }
-    });
+    );
   });
+
+  zoraFactory.on("CoinCreatedV4", onCoinCreated);
+  zoraFactory.on("CreatorCoinCreated", onCoinCreated);
 }
 
 function stopMonitorNewPairs(): void {
@@ -51,48 +89,61 @@ function stopMonitorNewPairs(): void {
     factory.off("PairCreated");
     factory.removeAllListeners();
   });
+
+  zoraFactory.off("CoinCreatedV4", onCoinCreated);
+  zoraFactory.off("CreatorCoinCreated", onCoinCreated);
 }
 
 // Monitor big buy events on routers
 function monitorBigBuys(): void {
   routers.forEach((router, index) => {
     const routerName = routerNames[index];
-    
-    router.on("Swap", async (sender: string, amountIn: bigint, amountOutMin: bigint, path: string[], to: string, event: any) => {
-      try {
-        const txHash = event.log.transactionHash;
-        
-        if (processedTransactions.has(txHash)) {
-          return;
-        }
-        
-        processedTransactions.add(txHash);
-        
-        if (!Array.isArray(path) || path.length < 2) return;
-        
-        const inputToken = path[0].toLowerCase();
-        const outputToken = path[path.length - 1].toLowerCase();
-        
-        // Check if buying with ETH
-        if (inputToken === config.WETH_ADDRESS) {
-          const ethAmount = parseFloat(ethers.formatEther(amountIn));
-          
-          if (ethAmount >= config.BIG_BUY_THRESHOLD) {
-            const tokenInfo = await checkTokenInfo(outputToken);
-            const buyData: BigBuyData = {
-              sender,
-              ethAmount,
-              tokenInfo,
-              routerName,
-              txHash
-            };
-            await sendBuyAlert(buyData);
+
+    router.on(
+      "Swap",
+      async (
+        sender: string,
+        amountIn: bigint,
+        amountOutMin: bigint,
+        path: string[],
+        to: string,
+        event: any
+      ) => {
+        try {
+          const txHash = event.log.transactionHash;
+
+          if (processedTransactions.has(txHash)) {
+            return;
           }
+
+          processedTransactions.add(txHash);
+
+          if (!Array.isArray(path) || path.length < 2) return;
+
+          const inputToken = path[0].toLowerCase();
+          const outputToken = path[path.length - 1].toLowerCase();
+
+          // Check if buying with ETH
+          if (inputToken === config.WETH_ADDRESS) {
+            const ethAmount = parseFloat(ethers.formatEther(amountIn));
+
+            if (ethAmount >= config.BIG_BUY_THRESHOLD) {
+              const tokenInfo = await checkTokenInfo(outputToken);
+              const buyData: BigBuyData = {
+                sender,
+                ethAmount,
+                tokenInfo,
+                routerName,
+                txHash,
+              };
+              await sendBuyAlert(buyData);
+            }
+          }
+        } catch (error) {
+          console.error("Error processing swap event:", error);
         }
-      } catch (error) {
-        console.error("Error processing swap event:", error);
       }
-    });
+    );
   });
 }
 

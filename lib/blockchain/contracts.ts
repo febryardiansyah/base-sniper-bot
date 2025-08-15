@@ -3,18 +3,51 @@ import { config } from "../core/config";
 import { wsProvider, httpProvider } from "./providers";
 
 // Import ABIs
-import factoryAbi from "../../abi/UniswapV2Factory.json";
+import uniswapFactoryAbi from "../../abi/UniswapV2Factory.json";
 import pairAbi from "../../abi/UniswapV2Pair.json";
 import erc20Abi from "../../abi/ERC20.json";
 import routerAbi from "../../abi/Router.json";
 
 export { erc20Abi };
 
+const ZORA_FACTORY_ABI = [
+  // Content/Post coin
+  `event CoinCreatedV4(
+    address indexed caller,
+    address indexed payoutRecipient,
+    address indexed platformReferrer,
+    address currency,
+    string uri,
+    string name,
+    string symbol,
+    address coin,
+    tuple(address currency,address hook,address token0,address token1,uint24 fee,uint24 tickSpacing,bytes hooks) poolKey, // catatan: sesuaikan tipe sesuai ABI final jika perlu
+    bytes32 poolKeyHash,
+    string version
+  )`,
+  // Creator coin
+  `event CreatorCoinCreated(
+    address indexed caller,
+    address indexed payoutRecipient,
+    address indexed platformReferrer,
+    address currency,
+    string uri,
+    string name,
+    string symbol,
+    address coin,
+    tuple(address currency,address hook,address token0,address token1,uint24 fee,uint24 tickSpacing,bytes hooks) poolKey,
+    bytes32 poolKeyHash,
+    string version
+  )`,
+];
+
 // Initialize factory contracts
 export const factories = [
-  new ethers.Contract(config.UNISWAP_V2_FACTORY, factoryAbi, wsProvider),
-  new ethers.Contract(config.AERODROME_FACTORY, factoryAbi, wsProvider),
+  new ethers.Contract(config.UNISWAP_V2_FACTORY, uniswapFactoryAbi, wsProvider),
+  new ethers.Contract(config.AERODROME_FACTORY, uniswapFactoryAbi, wsProvider),
 ];
+
+export const zoraFactory = new ethers.Contract(config.ZORA_FACTORY, ZORA_FACTORY_ABI, wsProvider);
 
 // Initialize router contracts
 export const routers = [
@@ -26,18 +59,6 @@ export const routers = [
 // Factory names for logging
 export const factoryNames = ["Uniswap V2", "Aerodrome"];
 export const routerNames = ["Uniswap V2", "Aerodrome", "Universal Router"];
-
-// Universal Router command types
-export const UNIVERSAL_ROUTER_COMMANDS = {
-  V2_SWAP_EXACT_IN: 0x08,
-  V2_SWAP_EXACT_OUT: 0x09,
-  V3_SWAP_EXACT_IN: 0x00,
-  V3_SWAP_EXACT_OUT: 0x01,
-  WRAP_ETH: 0x0b,
-  UNWRAP_WETH: 0x0c,
-  PERMIT2_TRANSFER_FROM: 0x06,
-  SWEEP_ERC20: 0x04
-};
 
 // Create pair contract instance
 export function createPairContract(pairAddress: string): ethers.Contract {
