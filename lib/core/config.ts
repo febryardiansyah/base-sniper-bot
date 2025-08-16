@@ -32,6 +32,9 @@ export interface Config {
   AUTO_SWAP_GAS_LIMIT?: number;
   AUTO_SWAP_GAS_PRICE?: string;
   ZORA_FACTORY: string;
+  ETHER_SCAN_API: string;
+  ETHER_SCAN_API_KEY: string;
+  BASE_CHAIN_ID: number;
 }
 
 // Configuration object
@@ -64,4 +67,7 @@ export const config: Config = {
   AUTO_SWAP_GAS_PRICE: process.env.AUTO_SWAP_GAS_PRICE,
   ETH_ADDRESS: '0x0000000000000000000000000000000000000000',
   ZORA_FACTORY: process.env.ZORA_FACTORY!,
+  ETHER_SCAN_API: 'https://api.etherscan.io/v2/api',
+  ETHER_SCAN_API_KEY: process.env.ETHER_SCAN_API_KEY!,
+  BASE_CHAIN_ID: 8453,
 };

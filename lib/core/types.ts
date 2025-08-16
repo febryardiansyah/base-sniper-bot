@@ -100,3 +100,20 @@ export interface IRelaySwapStatusResponse {
   message: string;
   timestamp: string;
 }
+
+export interface ITransaction {
+  blockNumber: string;
+  timeStamp: string;
+  hash: string;
+  from: string;
+  to: string;
+  value: string;
+  isError: string;
+  txreceipt_status: string;
+}
+
+export interface IEtherscanResponse {
+  status: string;
+  message: string;
+  result: ITransaction[];
+}
