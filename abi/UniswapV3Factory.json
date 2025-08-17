@@ -1,0 +1,3 @@
+[
+  "event PoolCreated(address indexed token0, address indexed token1, uint24 fee, int24 tickSpacing, address pool)"
+]

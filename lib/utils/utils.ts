@@ -18,6 +18,10 @@ export const commandList: ICommand[] = [
     description: "Stop monitoring",
   },
   {
+    command: "/status",
+    description: "Show monitoring status",
+  },
+  {
     command: "/help",
     description: "Show this help message",
   },

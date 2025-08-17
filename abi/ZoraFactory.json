@@ -1,0 +1,4 @@
+[
+  "event CoinCreatedV4(address indexed caller, address indexed payoutRecipient, address indexed platformReferrer, address currency, string uri, string name, string symbol, address coin, tuple(address currency,address hook,address token0,address token1,uint24 fee,uint24 tickSpacing,bytes hooks) poolKey, bytes32 poolKeyHash, string version)",
+  "event CreatorCoinCreated(address indexed caller, address indexed payoutRecipient, address indexed platformReferrer, address currency, string uri, string name, string symbol, address coin, tuple(address currency,address hook,address token0,address token1,uint24 fee,uint24 tickSpacing,bytes hooks) poolKey, bytes32 poolKeyHash, string version)"
+]

@@ -12,7 +12,11 @@ import { ethers } from "ethers";
 import { checkAddressInfo, checkUserTokenInfo } from "./info";
 import { commandList } from "../utils/utils";
 import { wsProvider } from "../blockchain/providers";
-import { startMonitor, statusMonitoring, stopMonitor } from "../blockchain/monitoring";
+import {
+  startMonitor,
+  statusMonitoring,
+  stopMonitor,
+} from "../blockchain/monitoring";
 
 // Initialize Telegram bot
 export const telegramBot = new TelegramBot(config.TELEGRAM_BOT_TOKEN, {
@@ -152,6 +156,12 @@ export function setupCommandHandlers(): void {
     }
     stopMonitor();
     telegramBot.sendMessage(chatId, "🛑 Monitoring stopped");
+  });
+
+  telegramBot.onText(/\/status/, async (msg) => {
+    const chatId = msg.chat.id;
+    const status = statusMonitoring() ? "Running 🟢" : "Stopped 🛑";
+    await telegramBot.sendMessage(chatId, `Monitoring Status: ${status}`);
   });
 
   // Handle /swap command

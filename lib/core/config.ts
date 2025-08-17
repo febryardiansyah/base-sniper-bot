@@ -16,6 +16,8 @@ export interface Config {
   ETH_ADDRESS: string;
   UNISWAP_V2_FACTORY: string;
   UNISWAP_V2_ROUTER: string;
+  UNISWAP_V3_FACTORY: string;
+  UNISWAP_V4_POOL_MANAGER: string;
   AERODROME_FACTORY: string;
   AERODROME_ROUTER: string;
   BLOCK_CONFIRMATION_COUNT: number;
@@ -35,6 +37,7 @@ export interface Config {
   ETHER_SCAN_API: string;
   ETHER_SCAN_API_KEY: string;
   BASE_CHAIN_ID: number;
+  USDC_ADDRESS: string;
 }
 
 // Configuration object
@@ -50,6 +53,8 @@ export const config: Config = {
   WETH_ADDRESS: '0x4200000000000000000000000000000000000006',
   UNISWAP_V2_FACTORY: process.env.UNISWAP_V2_FACTORY!,
   UNISWAP_V2_ROUTER: process.env.UNISWAP_V2_ROUTER!,
+  UNISWAP_V3_FACTORY: process.env.UNISWAP_V3_FACTORY!,
+  UNISWAP_V4_POOL_MANAGER: process.env.UNISWAP_V4_POOL_MANAGER!,
   AERODROME_FACTORY: process.env.AERODROME_FACTORY!,
   AERODROME_ROUTER: process.env.AERODROME_ROUTER!,
   BLOCK_CONFIRMATION_COUNT: parseInt("3"),
@@ -70,4 +75,5 @@ export const config: Config = {
   ETHER_SCAN_API: 'https://api.etherscan.io/v2/api',
   ETHER_SCAN_API_KEY: process.env.ETHER_SCAN_API_KEY!,
   BASE_CHAIN_ID: 8453,
+  USDC_ADDRESS: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
 };

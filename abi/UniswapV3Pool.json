@@ -1,0 +1,5 @@
+[
+  "event Mint(address sender, address indexed owner, int24 indexed tickLower, int24 indexed tickUpper, uint128 amount, uint256 amount0, uint256 amount1)",
+  "function token0() view returns (address)",
+  "function token1() view returns (address)"
+]
