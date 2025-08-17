@@ -15,10 +15,6 @@ export class BaseChainSniperBot {
     // Set up Telegram command handlers
     setupCommandHandlers();
     console.log("📱 Telegram command interface enabled");
-    
-    // Start monitoring
-    startMonitor();
-    console.log("🔍 Monitoring started automatically");
 
     // Log auto swap status
     if (config.AUTO_SWAP_ENABLED) {

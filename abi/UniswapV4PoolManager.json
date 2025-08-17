@@ -1,4 +1,106 @@
 [
-  "event Initialize(bytes32 indexed id, address indexed currency0, address indexed currency1, uint24 fee, int24 tickSpacing, address hooks, uint160 sqrtPriceX96, int24 tick)",
-  "event ModifyLiquidity(bytes32 indexed id, address indexed sender, int24 tickLower, int24 tickUpper, int256 liquidityDelta, int256 amount0, int256 amount1)"
+  {
+    "type": "event",
+    "name": "Initialize",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "bytes32",
+        "internalType": "bytes32",
+        "indexed": true
+      },
+      {
+        "name": "currency0",
+        "type": "address",
+        "internalType": "address",
+        "indexed": true
+      },
+      {
+        "name": "currency1",
+        "type": "address",
+        "internalType": "address",
+        "indexed": true
+      },
+      {
+        "name": "fee",
+        "type": "uint24",
+        "internalType": "uint24",
+        "indexed": false
+      },
+      {
+        "name": "tickSpacing",
+        "type": "int24",
+        "internalType": "int24",
+        "indexed": false
+      },
+      {
+        "name": "hooks",
+        "type": "address",
+        "internalType": "address",
+        "indexed": false
+      },
+      {
+        "name": "sqrtPriceX96",
+        "type": "uint160",
+        "internalType": "uint160",
+        "indexed": false
+      },
+      {
+        "name": "tick",
+        "type": "int24",
+        "internalType": "int24",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ModifyLiquidity",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "bytes32",
+        "internalType": "bytes32",
+        "indexed": true
+      },
+      {
+        "name": "sender",
+        "type": "address",
+        "internalType": "address",
+        "indexed": true
+      },
+      {
+        "name": "tickLower",
+        "type": "int24",
+        "internalType": "int24",
+        "indexed": false
+      },
+      {
+        "name": "tickUpper",
+        "type": "int24",
+        "internalType": "int24",
+        "indexed": false
+      },
+      {
+        "name": "liquidityDelta",
+        "type": "int256",
+        "internalType": "int256",
+        "indexed": false
+      },
+      {
+        "name": "amount0",
+        "type": "int256",
+        "internalType": "int256",
+        "indexed": false
+      },
+      {
+        "name": "amount1",
+        "type": "int256",
+        "internalType": "int256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  }
 ]

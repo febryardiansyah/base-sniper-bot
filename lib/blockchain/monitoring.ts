@@ -22,6 +22,7 @@ import { wsProvider } from "./providers";
 import { sleep } from "../utils/utils";
 import { buyTokenWithETH } from "../services/swap";
 import { checkTokenInfo, checkUserTokenInfo } from "../services/info";
+import { uniswapV2Blacklist } from "../utils/tokenBlacklisted";
 
 // Constants for thresholds
 const MIN_ETH = ethers.parseEther("5"); // 5 ETH
@@ -95,8 +96,9 @@ function monitorNewPairs(): void {
 
           const pairInfo = await analyzePair(pairAddress, token0, token1);
           const isShouldAlert = pairInfo && shouldAlert(pairInfo);
+          const isBlackListed = uniswapV2Blacklist.includes(pairInfo!.token0.symbol) || uniswapV2Blacklist.includes(pairInfo!.token1.symbol);
 
-          if (isShouldAlert) {
+          if (isShouldAlert && !isBlackListed) {
             await sendPairAlert(pairInfo, factoryName);
           }
         } catch (error) {

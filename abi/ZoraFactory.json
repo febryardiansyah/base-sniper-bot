@@ -1,4 +1,222 @@
 [
-  "event CoinCreatedV4(address indexed caller, address indexed payoutRecipient, address indexed platformReferrer, address currency, string uri, string name, string symbol, address coin, tuple(address currency,address hook,address token0,address token1,uint24 fee,uint24 tickSpacing,bytes hooks) poolKey, bytes32 poolKeyHash, string version)",
-  "event CreatorCoinCreated(address indexed caller, address indexed payoutRecipient, address indexed platformReferrer, address currency, string uri, string name, string symbol, address coin, tuple(address currency,address hook,address token0,address token1,uint24 fee,uint24 tickSpacing,bytes hooks) poolKey, bytes32 poolKeyHash, string version)"
+  {
+    "type": "event",
+    "name": "CoinCreatedV4",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address",
+        "indexed": true
+      },
+      {
+        "name": "payoutRecipient",
+        "type": "address",
+        "internalType": "address",
+        "indexed": true
+      },
+      {
+        "name": "platformReferrer",
+        "type": "address",
+        "internalType": "address",
+        "indexed": true
+      },
+      {
+        "name": "currency",
+        "type": "address",
+        "internalType": "address",
+        "indexed": false
+      },
+      {
+        "name": "uri",
+        "type": "string",
+        "internalType": "string",
+        "indexed": false
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "internalType": "string",
+        "indexed": false
+      },
+      {
+        "name": "symbol",
+        "type": "string",
+        "internalType": "string",
+        "indexed": false
+      },
+      {
+        "name": "coin",
+        "type": "address",
+        "internalType": "address",
+        "indexed": false
+      },
+      {
+        "name": "poolKey",
+        "type": "tuple",
+        "internalType": "struct PoolKey",
+        "indexed": false,
+        "components": [
+          {
+            "name": "currency",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "hook",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "token0",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "token1",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "fee",
+            "type": "uint24",
+            "internalType": "uint24"
+          },
+          {
+            "name": "tickSpacing",
+            "type": "uint24",
+            "internalType": "uint24"
+          },
+          {
+            "name": "hooks",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      },
+      {
+        "name": "poolKeyHash",
+        "type": "bytes32",
+        "internalType": "bytes32",
+        "indexed": false
+      },
+      {
+        "name": "version",
+        "type": "string",
+        "internalType": "string",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "CreatorCoinCreated",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address",
+        "indexed": true
+      },
+      {
+        "name": "payoutRecipient",
+        "type": "address",
+        "internalType": "address",
+        "indexed": true
+      },
+      {
+        "name": "platformReferrer",
+        "type": "address",
+        "internalType": "address",
+        "indexed": true
+      },
+      {
+        "name": "currency",
+        "type": "address",
+        "internalType": "address",
+        "indexed": false
+      },
+      {
+        "name": "uri",
+        "type": "string",
+        "internalType": "string",
+        "indexed": false
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "internalType": "string",
+        "indexed": false
+      },
+      {
+        "name": "symbol",
+        "type": "string",
+        "internalType": "string",
+        "indexed": false
+      },
+      {
+        "name": "coin",
+        "type": "address",
+        "internalType": "address",
+        "indexed": false
+      },
+      {
+        "name": "poolKey",
+        "type": "tuple",
+        "internalType": "struct PoolKey",
+        "indexed": false,
+        "components": [
+          {
+            "name": "currency",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "hook",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "token0",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "token1",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "fee",
+            "type": "uint24",
+            "internalType": "uint24"
+          },
+          {
+            "name": "tickSpacing",
+            "type": "uint24",
+            "internalType": "uint24"
+          },
+          {
+            "name": "hooks",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      },
+      {
+        "name": "poolKeyHash",
+        "type": "bytes32",
+        "internalType": "bytes32",
+        "indexed": false
+      },
+      {
+        "name": "version",
+        "type": "string",
+        "internalType": "string",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  }
 ]
