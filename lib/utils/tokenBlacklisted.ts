@@ -19,4 +19,6 @@ export const uniswapV2Blacklist = [
   "SOON",
   "VINE",
   "ALPACA",
+  "BALL",
+  "noice",
 ];
