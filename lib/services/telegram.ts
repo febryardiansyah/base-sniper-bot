@@ -1,7 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
 import BigNumber from "bignumber.js";
-import { config } from "../core/config";
-import { PairInfo, BigBuyData } from "../core/types";
+import { config } from "../utils/config";
+import { PairInfo, BigBuyData } from "../interface/types";
 import { getNonWETHToken } from "../blockchain/pairAnalyzer";
 import { buyTokenWithETH, sellTokenForETH } from "./swap";
 import {
@@ -12,11 +12,7 @@ import { ethers } from "ethers";
 import { checkAddressInfo, checkUserTokenInfo } from "./info";
 import { commandList } from "../utils/utils";
 import { BaseProviders } from "../blockchain/providers";
-import {
-  startMonitor,
-  statusMonitoring,
-  stopMonitor,
-} from "../blockchain/monitoring";
+import { BaseMonitoring } from "../blockchain/monitoring/monitoring";
 
 // Initialize Telegram bot
 export const telegramBot = new TelegramBot(config.TELEGRAM_BOT_TOKEN, {
@@ -140,27 +136,27 @@ export async function sendSwapExecutionMessage(data: {
 export function setupCommandHandlers(): void {
   telegramBot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
-    if (statusMonitoring()) {
+    if (BaseMonitoring.statusMonitoring()) {
       await telegramBot.sendMessage(chatId, "⚠️ Monitoring is already running");
       return;
     }
-    startMonitor();
+    BaseMonitoring.startMonitor();
     telegramBot.sendMessage(chatId, "🟢 Monitoring started");
   });
 
   telegramBot.onText(/\/stop/, async (msg) => {
     const chatId = msg.chat.id;
-    if (!statusMonitoring()) {
+    if (!BaseMonitoring.statusMonitoring()) {
       await telegramBot.sendMessage(chatId, "⚠️ Monitoring is not running");
       return;
     }
-    stopMonitor();
+    BaseMonitoring.stopMonitor();
     telegramBot.sendMessage(chatId, "🛑 Monitoring stopped");
   });
 
   telegramBot.onText(/\/status/, async (msg) => {
     const chatId = msg.chat.id;
-    const status = statusMonitoring() ? "Running 🟢" : "Stopped 🛑";
+    const status = BaseMonitoring.statusMonitoring() ? "Running 🟢" : "Stopped 🛑";
     await telegramBot.sendMessage(chatId, `Monitoring Status: ${status}`);
   });
 

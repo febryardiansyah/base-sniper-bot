@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { config } from "../core/config";
+import { config } from "../utils/config";
 
 // Initialize providers in BaseProviders namespace
 export const BaseProviders = {

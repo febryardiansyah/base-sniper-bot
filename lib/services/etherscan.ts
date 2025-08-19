@@ -1,7 +1,7 @@
 import axios from "axios";
-import { config } from "./../core/config";
+import { config } from "../utils/config";
 import { getTimeAgo } from "./../utils/utils";
-import { ITransaction, IEtherscanResponse } from "./../core/types";
+import { ITransaction, IEtherscanResponse } from "../interface/types";
 
 const key = config.ETHER_SCAN_API_KEY;
 const baseUrl = config.ETHER_SCAN_API;

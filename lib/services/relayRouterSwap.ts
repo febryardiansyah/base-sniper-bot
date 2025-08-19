@@ -1,12 +1,12 @@
 import { ethers } from "ethers";
 import axios from "axios";
-import { config } from "../core/config";
+import { config } from "../utils/config";
 import { BaseProviders } from "../blockchain/providers";
 import {
   IRelayQuoteResponse,
   IRelaySwapStatusResponse,
   ISwapResult,
-} from "../core/types";
+} from "../interface/types";
 import { checkUserTokenInfo } from "./info";
 
 // Constants

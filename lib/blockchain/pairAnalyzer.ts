@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import BigNumber from "bignumber.js";
-import { config } from "../core/config";
-import { PairInfo, ITokenInfo } from "../core/types";
+import { config } from "../utils/config";
+import { PairInfo, ITokenInfo } from "../interface/types";
 import { BaseContracts } from "../contracts/contracts";
 import { checkTokenInfo } from "../services/info";
 

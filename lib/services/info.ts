@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
-import { config } from "../core/config";
+import { config } from "../utils/config";
 import { BaseProviders } from "../blockchain/providers";
-import { IUserTokenInfo, ITokenInfo } from "../core/types";
+import { IUserTokenInfo, ITokenInfo } from "../interface/types";
 import { BaseContracts } from "../contracts/contracts";
 
 export async function checkUserTokenInfo(

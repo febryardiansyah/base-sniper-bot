@@ -1,5 +1,5 @@
 import * as ethers from "ethers";
-import { config } from "../core/config";
+import { config } from "../utils/config";
 import { BaseProviders } from "../blockchain/providers";
 
 // Import ABIs

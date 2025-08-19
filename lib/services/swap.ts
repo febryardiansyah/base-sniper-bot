@@ -1,8 +1,8 @@
 import { ethers } from "ethers";
-import { config } from "../core/config";
+import { config } from "../utils/config";
 import { BaseProviders } from "../blockchain/providers";
 import { BaseContracts } from "../contracts/contracts";
-import { ISwapResult } from "../core/types";
+import { ISwapResult } from "../interface/types";
 import { checkUserTokenInfo } from "./info";
 
 // Complete Router ABI with swap functions
