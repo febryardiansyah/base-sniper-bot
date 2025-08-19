@@ -88,7 +88,7 @@ export async function sendBuyAlert(data: BigBuyData): Promise<void> {
 // Send bot startup message
 export async function sendStartupMessage(): Promise<void> {
   const message =
-    `🤖 Base Chain Sniper Bot is now ONLINE!\n\n` +
+    `🤖 Febry's Defi Bot is now ONLINE!\n\n` +
     `📊 Monitoring new tokens with high liquidity...\n\n` +
     `💬 Use /help to see available commands`;
 
@@ -305,7 +305,7 @@ export function setupCommandHandlers(): void {
       return;
     }
 
-    let helpMessage = "🤖 *Base Chain Sniper Bot Commands*\n";
+    let helpMessage = "🤖 *Febry's Defi Bot Commands*\n";
 
     for (var e of commandList) {
       helpMessage += `\n${e.command} - *${e.description}*`;

@@ -5,31 +5,6 @@ import { PairInfo, ITokenInfo } from "../core/types";
 import { createPairContract } from "./contracts";
 import { checkTokenInfo } from "../services/info";
 
-// Check if a pair should trigger auto swap
-export function shouldAutoSwap(pairInfo: PairInfo): boolean {
-  // Check if pair has enough liquidity for auto swap
-  if (pairInfo.liquidityETH < config.AUTO_SWAP_MIN_LIQUIDITY_ETH) {
-    return false;
-  }
-
-  // Get the non-WETH token
-  const nonWETHToken = getNonWETHToken(pairInfo);
-
-  // Check if token supply is below threshold for auto swap
-  const totalSupply = new BigNumber(nonWETHToken.totalSupply);
-  const totalSupplyFormatted = totalSupply.dividedBy(
-    new BigNumber(10).pow(nonWETHToken.decimals)
-  );
-
-  if (
-    totalSupplyFormatted.isGreaterThan(config.AUTO_SWAP_MAX_SUPPLY_THRESHOLD)
-  ) {
-    return false;
-  }
-
-  return true;
-}
-
 // Analyze pair for liquidity and token information
 export async function analyzePair(
   pairAddress: string,

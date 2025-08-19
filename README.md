@@ -1,4 +1,4 @@
-# Base Chain Sniper Bot 🎯
+# Febry's Defi Bot 🎯
 
 A powerful TypeScript bot that monitors the Base blockchain for new token launches with high liquidity and sends real-time alerts to Telegram. Perfect for identifying early investment opportunities and tracking large transactions.
 
@@ -29,7 +29,7 @@ A powerful TypeScript bot that monitors the Base blockchain for new token launch
 1. **Clone the repository**:
    ```bash
    git clone <your-repo-url>
-   cd base-snipe-bot
+   cd febrys-defi-bot
    ```
 
 2. **Install dependencies**:
@@ -68,14 +68,9 @@ UNIVERSAL_ROUTER=0x6ff5693b99212da76ad316178a184ab56d299b43
 PERMIT2_ADDRESS=0x000000000022D473030F116dDEE9F6B43aC78BA3
 USE_UNIVERSAL_ROUTER=true  # Enable Universal Router for better liquidity access
 
-# Auto Swap Configuration
-WALLET_PRIVATE_KEY=YOUR_WALLET_PRIVATE_KEY  # Required for auto swap
-AUTO_SWAP_ENABLED=false  # Set to true to enable auto swap
-AUTO_SWAP_BUY_AMOUNT=0.1  # Amount of ETH to spend on each buy
-AUTO_SWAP_SLIPPAGE_PERCENT=5  # Slippage tolerance percentage
-AUTO_SWAP_ROUTER_INDEX=0  # 0 for Uniswap V2, 1 for Aerodrome
-AUTO_SWAP_MIN_LIQUIDITY_ETH=10.0  # Minimum liquidity required to auto swap
-AUTO_SWAP_MAX_SUPPLY_THRESHOLD=1000000000  # Maximum token supply to consider for auto swap
+# Wallet Configuration
+WALLET_PRIVATE_KEY=YOUR_WALLET_PRIVATE_KEY  # Required for manual swaps
+
 ```
 
 ### Getting Required Credentials
@@ -250,21 +245,9 @@ Modify these values in your `.env` file:
 
 Configure swap behavior with these settings:
 
-- `WALLET_PRIVATE_KEY`: Your wallet's private key (required for both auto and manual swaps)
+- `WALLET_PRIVATE_KEY`: Your wallet's private key (required for manual swaps via Telegram commands)
 
-#### Auto Swap Settings
-- `AUTO_SWAP_ENABLED`: Set to `true` to enable automatic token purchases
-- `AUTO_SWAP_BUY_AMOUNT`: Amount of ETH to spend on each auto swap
-- `AUTO_SWAP_SLIPPAGE_PERCENT`: Slippage tolerance percentage
-- `AUTO_SWAP_ROUTER_INDEX`: Router to use (0 for Uniswap V2, 1 for Aerodrome)
-- `AUTO_SWAP_MIN_LIQUIDITY_ETH`: Minimum liquidity required to trigger auto swap
-- `AUTO_SWAP_MAX_SUPPLY_THRESHOLD`: Maximum token supply to consider for auto swap
-
-#### Gas Settings (Optional)
-- `AUTO_SWAP_GAS_LIMIT`: Optional gas limit for swap transactions
-- `AUTO_SWAP_GAS_PRICE`: Optional gas price in gwei
-
-> Note: Manual swaps via Telegram commands use the same wallet private key but allow you to specify custom parameters for each transaction.
+> Note: Manual swaps via Telegram commands allow you to specify custom parameters for each transaction.
 
 ### Adding More DEXs
 

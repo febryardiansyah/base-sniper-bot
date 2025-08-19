@@ -14,13 +14,11 @@ import {
 import {
   analyzePair,
   shouldAlert,
-  shouldAutoSwap,
   getNonWETHToken,
 } from "./pairAnalyzer";
 import { sendPairAlert, sendBuyAlert, telegramBot } from "../services/telegram";
 import { wsProvider } from "./providers";
 import { sleep } from "../utils/utils";
-import { buyTokenWithETH } from "../services/swap";
 import { checkTokenInfo, checkUserTokenInfo } from "../services/info";
 import { uniswapV2Blacklist } from "../utils/tokenBlacklisted";
 

@@ -17,18 +17,6 @@ export interface BigBuyData {
   txHash: string;
 }
 
-// Auto swap configuration interface
-export interface AutoSwapConfig {
-  enabled: boolean;
-  buyAmount: number; // Amount of ETH to spend on each buy
-  slippagePercent: number;
-  routerIndex: number; // 0 for Uniswap V2, 1 for Aerodrome
-  minLiquidityETH: number; // Minimum liquidity required to auto swap
-  maxSupplyThreshold: number; // Maximum token supply to consider for auto swap
-  gasLimit?: number; // Optional gas limit for swap transactions
-  gasPrice?: string; // Optional gas price in gwei
-}
-
 export interface IUserTokenInfo {
   address: string;
   name: string;
