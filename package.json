@@ -10,7 +10,8 @@
     "test": "node test.js",
     "build": "tsc --outDir dist",
     "start": "node dist/index.js",
-    "dev": "ts-node index.ts",
+    "dev": "nodemon",
+    "dev:ts": "ts-node index.ts",
     "clean": "rm -rf dist",
     "setup": "cp .env.example .env && echo 'Please configure your .env file with your API keys'",
     "lint": "eslint . --ext .ts,.tsx",
@@ -41,6 +42,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
     "globals": "^16.3.0",
+    "nodemon": "^3.1.10",
     "prettier": "^3.6.2",
     "typescript": "^5.8.3"
   }

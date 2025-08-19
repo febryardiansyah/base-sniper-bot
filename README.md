@@ -88,9 +88,14 @@ WALLET_PRIVATE_KEY=YOUR_WALLET_PRIVATE_KEY  # Required for manual swaps
 
 ## Usage 🚀
 
-### Development Mode
+### Development Mode (with nodemon auto-restart)
 ```bash
 npm run dev
+```
+
+### Development Mode (without auto-restart)
+```bash
+npm run dev:ts
 ```
 
 ### Production Mode

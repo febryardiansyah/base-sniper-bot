@@ -10,7 +10,7 @@ export class App {
     console.log(`🔵 Monitoring Uniswap V3 pools for liquidity additions`);
     console.log(`🟣 Monitoring Uniswap V4 pools for liquidity additions`);
 
-    await sendStartupMessage();
+    // await sendStartupMessage();
 
     // Set up Telegram command handlers
     setupCommandHandlers();
