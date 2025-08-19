@@ -1,6 +1,6 @@
 import * as ethers from "ethers";
 import { config } from "../core/config";
-import { wsProvider, httpProvider } from "../blockchain/providers";
+import { BaseProviders } from "../blockchain/providers";
 
 // Import ABIs
 import uniswapV2FactoryAbiJson from "../../abi/erc20/UniswapV2Factory.json";
@@ -30,12 +30,12 @@ export const factories = [
   new ethers.Contract(
     config.UNISWAP_V2_FACTORY,
     uniswapV2FactoryAbiJson,
-    wsProvider
+    BaseProviders.wsProvider
   ),
   new ethers.Contract(
     config.AERODROME_FACTORY,
     uniswapV2FactoryAbiJson,
-    wsProvider
+    BaseProviders.wsProvider
   ),
 ];
 
@@ -43,26 +43,26 @@ export const factories = [
 export const uniswapV3Factory = new ethers.Contract(
   config.UNISWAP_V3_FACTORY,
   uniswapV3FactoryAbiJson,
-  wsProvider
+  BaseProviders.wsProvider
 );
 
 // Initialize Uniswap V4 pool manager contract
 export const uniswapV4PoolManager = new ethers.Contract(
   config.UNISWAP_V4_POOL_MANAGER,
   uniswapV4PoolManagerAbiJson,
-  wsProvider
+  BaseProviders.wsProvider
 );
 
 export const zoraFactory = new ethers.Contract(
   config.ZORA_FACTORY,
   zoraFactoryAbiJson,
-  wsProvider
+  BaseProviders.wsProvider
 );
 
 // Initialize router contracts
 export const routers = [
-  new ethers.Contract(config.UNISWAP_V2_ROUTER, routerAbiJson, wsProvider),
-  new ethers.Contract(config.AERODROME_ROUTER, routerAbiJson, wsProvider),
+  new ethers.Contract(config.UNISWAP_V2_ROUTER, routerAbiJson, BaseProviders.wsProvider),
+  new ethers.Contract(config.AERODROME_ROUTER, routerAbiJson, BaseProviders.wsProvider),
 ];
 
 // Factory names for logging
@@ -71,5 +71,5 @@ export const routerNames = ["Uniswap V2", "Aerodrome", "Universal Router"];
 
 // Create pair contract instance
 export function createPairContract(pairAddress: string): ethers.Contract {
-  return new ethers.Contract(pairAddress, uniswapV2PairJson, httpProvider);
+  return new ethers.Contract(pairAddress, uniswapV2PairJson, BaseProviders.httpProvider);
 }

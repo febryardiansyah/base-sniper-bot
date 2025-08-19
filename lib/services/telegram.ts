@@ -11,7 +11,7 @@ import {
 import { ethers } from "ethers";
 import { checkAddressInfo, checkUserTokenInfo } from "./info";
 import { commandList } from "../utils/utils";
-import { wsProvider } from "../blockchain/providers";
+import { BaseProviders } from "../blockchain/providers";
 import {
   startMonitor,
   statusMonitoring,

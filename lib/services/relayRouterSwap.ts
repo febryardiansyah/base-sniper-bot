@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import axios from "axios";
 import { config } from "../core/config";
-import { baseProvider } from "../blockchain/providers";
+import { BaseProviders } from "../blockchain/providers";
 import {
   IRelayQuoteResponse,
   IRelaySwapStatusResponse,
@@ -13,7 +13,7 @@ import { checkUserTokenInfo } from "./info";
 const RELAY_API_URL = "https://api.relay.link";
 
 // Create wallet instance
-const wallet = new ethers.Wallet(config.WALLET_PRIVATE_KEY!, baseProvider);
+const wallet = new ethers.Wallet(config.WALLET_PRIVATE_KEY!, BaseProviders.baseProvider);
 
 async function getQuote({
   originCurrency = config.ETH_ADDRESS,

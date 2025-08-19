@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { config } from "../core/config";
-import { baseProvider } from "../blockchain/providers";
-import { baseContracts } from "../contracts/contracts";
+import { BaseProviders } from "../blockchain/providers";
+import { BaseContracts } from "../contracts/contracts";
 import { ISwapResult } from "../core/types";
 import { checkUserTokenInfo } from "./info";
 
@@ -23,7 +23,7 @@ const factoryABI = [
 ];
 
 // Create wallet instance
-const wallet = new ethers.Wallet(config.WALLET_PRIVATE_KEY!, baseProvider);
+const wallet = new ethers.Wallet(config.WALLET_PRIVATE_KEY!, BaseProviders.baseProvider);
 
 const aerodromeRouter = new ethers.Contract(
   config.AERODROME_ROUTER,
@@ -60,7 +60,7 @@ export async function buyTokenWithETH(
 
     for (let i = 0; i < swapRouters.length; i++) {
       const router = swapRouters[i];
-      const routerName = baseContracts.routerNames[i];
+      const routerName = BaseContracts.routerNames[i];
 
       console.log(`\n🔄 Trying ${routerName} router...`);
 
@@ -72,7 +72,7 @@ export async function buyTokenWithETH(
         const factory = new ethers.Contract(
           factoryAddress,
           factoryABI,
-          baseProvider
+          BaseProviders.baseProvider
         );
 
         const pairAddress = await factory.getPair(
@@ -230,7 +230,7 @@ export async function sellTokenForETH(
     // Try each router in sequence
     for (let i = 0; i < swapRouters.length; i++) {
       const router = swapRouters[i];
-      const routerName = baseContracts.routerNames[i];
+      const routerName = BaseContracts.routerNames[i];
 
       console.log(`\n🔄 Trying ${routerName} router for selling tokens...`);
 
@@ -242,7 +242,7 @@ export async function sellTokenForETH(
         const factory = new ethers.Contract(
           factoryAddress,
           factoryABI,
-          baseProvider
+          BaseProviders.baseProvider
         );
 
         const pairAddress = await factory.getPair(

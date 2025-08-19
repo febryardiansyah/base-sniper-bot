@@ -1,14 +1,14 @@
 import { ethers } from "ethers";
 import { config } from "../core/config";
 import { BigBuyData, PairInfo } from "../core/types";
-import { baseContracts } from "../contracts/contracts";
+import { BaseContracts } from "../contracts/contracts";
 import {
   analyzePair,
   shouldAlert,
   getNonWETHToken,
 } from "./pairAnalyzer";
 import { sendPairAlert, sendBuyAlert, telegramBot } from "../services/telegram";
-import { wsProvider } from "./providers";
+import { BaseProviders } from "./providers";
 import { sleep } from "../utils/utils";
 import { checkTokenInfo, checkUserTokenInfo } from "../services/info";
 import { uniswapV2Blacklist } from "../utils/tokenBlacklisted";
@@ -60,8 +60,8 @@ async function onCoinCreated(
 // Monitor new pair creation events
 function monitorNewPairs(): void {
   // Monitor Uniswap V2 and Aerodrome pairs
-  baseContracts.factories.forEach((factory, index) => {
-    const factoryName = baseContracts.factoryNames[index];
+  BaseContracts.factories.forEach((factory, index) => {
+    const factoryName = BaseContracts.factoryNames[index];
 
     factory.on(
       "PairCreated",
@@ -98,7 +98,7 @@ function monitorNewPairs(): void {
   });
 
   // Monitor Uniswap V3 pools
-  baseContracts.uniswapV3Factory.on(
+  BaseContracts.uniswapV3Factory.on(
     "PoolCreated",
     async (token0: string, token1: string, fee: number, tickSpacing: number, pool: string, event: any) => {
       try {
@@ -107,7 +107,7 @@ function monitorNewPairs(): void {
         console.log(`    tx=${event.log.transactionHash}`);
 
         // Create a contract instance for the pool to listen for Mint events
-        const poolContract = new ethers.Contract(pool, baseContracts.uniswapV3PoolAbi, wsProvider);
+        const poolContract = new ethers.Contract(pool, BaseContracts.uniswapV3PoolAbi, BaseProviders.wsProvider);
         
         poolContract.on(
           "Mint",
@@ -181,7 +181,7 @@ function monitorNewPairs(): void {
   );
 
   // Monitor Uniswap V4 pools
-  baseContracts.uniswapV4PoolManager.on(
+  BaseContracts.uniswapV4PoolManager.on(
     "Initialize",
     async (id: string, currency0: string, currency1: string, fee: number, tickSpacing: number, hooks: string, event: any) => {
       try {
@@ -197,7 +197,7 @@ function monitorNewPairs(): void {
     }
   );
 
-  baseContracts.uniswapV4PoolManager.on(
+  BaseContracts.uniswapV4PoolManager.on(
     "ModifyLiquidity",
     async (id: string, owner: string, tickLower: number, tickUpper: number, liquidityDelta: bigint, event: any) => {
       console.log(`\n🟧 [V4] ModifyLiquidity  id=${id}`);
@@ -206,7 +206,7 @@ function monitorNewPairs(): void {
         if (liquidityDelta <= 0n) return;
         
         // Get transaction receipt to check token transfers
-        const receipt = await wsProvider.getTransactionReceipt(event.log.transactionHash);
+        const receipt = await BaseProviders.wsProvider.getTransactionReceipt(event.log.transactionHash);
         if (!receipt) return;
         
         // Get the currencies for this pool ID
@@ -291,30 +291,30 @@ function monitorNewPairs(): void {
     }
   );
 
-  baseContracts.zoraFactory.on("CoinCreatedV4", onCoinCreated);
-  baseContracts.zoraFactory.on("CreatorCoinCreated", onCoinCreated);
+  BaseContracts.zoraFactory.on("CoinCreatedV4", onCoinCreated);
+  BaseContracts.zoraFactory.on("CreatorCoinCreated", onCoinCreated);
 }
 function stopMonitorNewPairs(): void {
-  baseContracts.factories.forEach((factory) => {
+  BaseContracts.factories.forEach((factory) => {
     factory.off("PairCreated");
     factory.removeAllListeners();
   });
 
-  baseContracts.zoraFactory.off("CoinCreatedV4", onCoinCreated);
-  baseContracts.zoraFactory.off("CreatorCoinCreated", onCoinCreated);
+  BaseContracts.zoraFactory.off("CoinCreatedV4", onCoinCreated);
+  BaseContracts.zoraFactory.off("CreatorCoinCreated", onCoinCreated);
 
-  baseContracts.uniswapV3Factory.off('PoolCreated')
-  baseContracts.uniswapV3Factory.removeAllListeners()
+  BaseContracts.uniswapV3Factory.off('PoolCreated')
+  BaseContracts.uniswapV3Factory.removeAllListeners()
 
-  baseContracts.uniswapV4PoolManager.off('Initialize')
-  baseContracts.uniswapV4PoolManager.off('ModifyLiquidity')
-  baseContracts.uniswapV4PoolManager.removeAllListeners()
+  BaseContracts.uniswapV4PoolManager.off('Initialize')
+  BaseContracts.uniswapV4PoolManager.off('ModifyLiquidity')
+  BaseContracts.uniswapV4PoolManager.removeAllListeners()
 }
 
 // Monitor big buy events on routers
 function monitorBigBuys(): void {
-  baseContracts.routers.forEach((router, index) => {
-    const routerName = baseContracts.routerNames[index];
+  BaseContracts.routers.forEach((router, index) => {
+    const routerName = BaseContracts.routerNames[index];
 
     router.on(
       "Swap",
@@ -364,22 +364,22 @@ function monitorBigBuys(): void {
   });
 }
 function stopMonitorBigBuys(): void {
-  baseContracts.routers.forEach((router) => {
+  BaseContracts.routers.forEach((router) => {
     router.off("Swap");
     router.removeAllListeners();
   });
 }
 // Monitor blocks for logging
 function monitorBlocks(): void {
-  wsProvider.on("block", (blockNumber: number) => {
+  BaseProviders.wsProvider.on("block", (blockNumber: number) => {
     console.log(`📦 Block ${blockNumber}`);
   });
 }
 
 function stopMonitorBlocks(): void {
-  wsProvider.off("block");
-  wsProvider.removeAllListeners();
-  wsProvider.destroy();
+  BaseProviders.wsProvider.off("block");
+  BaseProviders.wsProvider.removeAllListeners();
+  BaseProviders.wsProvider.destroy();
 }
 
 export function startMonitor(): void {
