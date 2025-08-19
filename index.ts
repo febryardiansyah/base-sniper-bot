@@ -1,4 +1,4 @@
-import { FebrysDefiBot } from "./lib/FebrysDefiBot";
+import { App } from "./lib/app";
 
 // Error handling
 process.on('uncaughtException', (error) => {
@@ -16,7 +16,7 @@ process.on('SIGINT', () => {
 });
 
 // Start the bot
-const bot = new FebrysDefiBot();
+const bot = new App();
 bot.start().catch(console.error);
 
 console.log("🎯 Febry's Defi Bot initialized and ready to hunt!");

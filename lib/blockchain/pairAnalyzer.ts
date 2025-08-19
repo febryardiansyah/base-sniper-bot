@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import BigNumber from "bignumber.js";
 import { config } from "../core/config";
 import { PairInfo, ITokenInfo } from "../core/types";
-import { createPairContract } from "./contracts";
+import { baseContracts } from "../contracts/contracts";
 import { checkTokenInfo } from "../services/info";
 
 // Analyze pair for liquidity and token information
@@ -12,7 +12,7 @@ export async function analyzePair(
   token1Address: string
 ): Promise<PairInfo | null> {
   try {
-    const pairContract = createPairContract(pairAddress);
+    const pairContract = baseContracts.createPairContract(pairAddress);
 
     // Get token information
     const [token0Info, token1Info] = await Promise.all([

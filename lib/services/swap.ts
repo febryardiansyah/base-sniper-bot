@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { config } from "../core/config";
 import { baseProvider } from "../blockchain/providers";
-import { routerNames } from "../blockchain/contracts";
+import { baseContracts } from "../contracts/contracts";
 import { ISwapResult } from "../core/types";
 import { checkUserTokenInfo } from "./info";
 
@@ -60,7 +60,7 @@ export async function buyTokenWithETH(
 
     for (let i = 0; i < swapRouters.length; i++) {
       const router = swapRouters[i];
-      const routerName = routerNames[i];
+      const routerName = baseContracts.routerNames[i];
 
       console.log(`\n🔄 Trying ${routerName} router...`);
 
@@ -230,7 +230,7 @@ export async function sellTokenForETH(
     // Try each router in sequence
     for (let i = 0; i < swapRouters.length; i++) {
       const router = swapRouters[i];
-      const routerName = routerNames[i];
+      const routerName = baseContracts.routerNames[i];
 
       console.log(`\n🔄 Trying ${routerName} router for selling tokens...`);
 

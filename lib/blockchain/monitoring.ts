@@ -1,16 +1,7 @@
 import { ethers } from "ethers";
 import { config } from "../core/config";
 import { BigBuyData, PairInfo } from "../core/types";
-import {
-  factories,
-  routers,
-  factoryNames,
-  routerNames,
-  zoraFactory,
-  uniswapV3Factory,
-  uniswapV4PoolManager,
-  uniswapV3PoolAbi,
-} from "./contracts";
+import { baseContracts } from "../contracts/contracts";
 import {
   analyzePair,
   shouldAlert,
@@ -69,8 +60,8 @@ async function onCoinCreated(
 // Monitor new pair creation events
 function monitorNewPairs(): void {
   // Monitor Uniswap V2 and Aerodrome pairs
-  factories.forEach((factory, index) => {
-    const factoryName = factoryNames[index];
+  baseContracts.factories.forEach((factory, index) => {
+    const factoryName = baseContracts.factoryNames[index];
 
     factory.on(
       "PairCreated",
@@ -107,7 +98,7 @@ function monitorNewPairs(): void {
   });
 
   // Monitor Uniswap V3 pools
-  uniswapV3Factory.on(
+  baseContracts.uniswapV3Factory.on(
     "PoolCreated",
     async (token0: string, token1: string, fee: number, tickSpacing: number, pool: string, event: any) => {
       try {
@@ -116,7 +107,7 @@ function monitorNewPairs(): void {
         console.log(`    tx=${event.log.transactionHash}`);
 
         // Create a contract instance for the pool to listen for Mint events
-        const poolContract = new ethers.Contract(pool, uniswapV3PoolAbi, wsProvider);
+        const poolContract = new ethers.Contract(pool, baseContracts.uniswapV3PoolAbi, wsProvider);
         
         poolContract.on(
           "Mint",
@@ -190,7 +181,7 @@ function monitorNewPairs(): void {
   );
 
   // Monitor Uniswap V4 pools
-  uniswapV4PoolManager.on(
+  baseContracts.uniswapV4PoolManager.on(
     "Initialize",
     async (id: string, currency0: string, currency1: string, fee: number, tickSpacing: number, hooks: string, event: any) => {
       try {
@@ -206,7 +197,7 @@ function monitorNewPairs(): void {
     }
   );
 
-  uniswapV4PoolManager.on(
+  baseContracts.uniswapV4PoolManager.on(
     "ModifyLiquidity",
     async (id: string, owner: string, tickLower: number, tickUpper: number, liquidityDelta: bigint, event: any) => {
       console.log(`\n🟧 [V4] ModifyLiquidity  id=${id}`);
@@ -300,30 +291,30 @@ function monitorNewPairs(): void {
     }
   );
 
-  zoraFactory.on("CoinCreatedV4", onCoinCreated);
-  zoraFactory.on("CreatorCoinCreated", onCoinCreated);
+  baseContracts.zoraFactory.on("CoinCreatedV4", onCoinCreated);
+  baseContracts.zoraFactory.on("CreatorCoinCreated", onCoinCreated);
 }
 function stopMonitorNewPairs(): void {
-  factories.forEach((factory) => {
+  baseContracts.factories.forEach((factory) => {
     factory.off("PairCreated");
     factory.removeAllListeners();
   });
 
-  zoraFactory.off("CoinCreatedV4", onCoinCreated);
-  zoraFactory.off("CreatorCoinCreated", onCoinCreated);
+  baseContracts.zoraFactory.off("CoinCreatedV4", onCoinCreated);
+  baseContracts.zoraFactory.off("CreatorCoinCreated", onCoinCreated);
 
-  uniswapV3Factory.off('PoolCreated')
-  uniswapV3Factory.removeAllListeners()
+  baseContracts.uniswapV3Factory.off('PoolCreated')
+  baseContracts.uniswapV3Factory.removeAllListeners()
 
-  uniswapV4PoolManager.off('Initialize')
-  uniswapV4PoolManager.off('ModifyLiquidity')
-  uniswapV4PoolManager.removeAllListeners()
+  baseContracts.uniswapV4PoolManager.off('Initialize')
+  baseContracts.uniswapV4PoolManager.off('ModifyLiquidity')
+  baseContracts.uniswapV4PoolManager.removeAllListeners()
 }
 
 // Monitor big buy events on routers
 function monitorBigBuys(): void {
-  routers.forEach((router, index) => {
-    const routerName = routerNames[index];
+  baseContracts.routers.forEach((router, index) => {
+    const routerName = baseContracts.routerNames[index];
 
     router.on(
       "Swap",
@@ -373,7 +364,7 @@ function monitorBigBuys(): void {
   });
 }
 function stopMonitorBigBuys(): void {
-  routers.forEach((router) => {
+  baseContracts.routers.forEach((router) => {
     router.off("Swap");
     router.removeAllListeners();
   });

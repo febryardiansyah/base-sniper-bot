@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import { config } from "../core/config";
 import { baseProvider, httpProvider } from "../blockchain/providers";
 import { IUserTokenInfo, ITokenInfo } from "../core/types";
-import { erc20Abi } from "../blockchain/contracts";
+import { baseContracts } from "../contracts/contracts";
 
 export async function checkUserTokenInfo(
   tokenAddress: string,
@@ -11,7 +11,7 @@ export async function checkUserTokenInfo(
 
   const tokenContract = new ethers.Contract(
     tokenAddress,
-    erc20Abi,
+    baseContracts.erc20Abi,
     wallet.provider
   );
 
@@ -46,7 +46,7 @@ export function checkAddressInfo(): string {
 
 export async function checkTokenInfo(tokenAddress: string): Promise<ITokenInfo | null> {
   try {
-    const tokenContract = new ethers.Contract(tokenAddress, erc20Abi, httpProvider);
+    const tokenContract = new ethers.Contract(tokenAddress, baseContracts.erc20Abi, httpProvider);
     
     const [name, symbol, decimals, totalSupply] = await Promise.all([
       tokenContract.name().catch(() => "Unknown"),
