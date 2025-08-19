@@ -1,155 +1,12 @@
-import TelegramBot from 'node-telegram-bot-api';
-import BigNumber from 'bignumber.js';
-import { config } from '../utils/config';
-import { PairInfo, BigBuyData } from '../interface/types';
-import { getNonWETHToken } from '../blockchain/pairAnalyzer';
-import { buyTokenWithETH, sellTokenForETH } from './swap';
-import { buyTokenWithRelayRouter, sellTokenWithRelayRouter } from './relayRouterSwap';
 import { ethers } from 'ethers';
-import { checkAddressInfo, checkUserTokenInfo } from './info';
-import { commandList } from '../utils/utils';
-import { BaseProviders } from '../blockchain/providers';
-import { BaseMonitoring } from '../blockchain/monitoring/monitoring';
+import { buyTokenWithRelayRouter, sellTokenWithRelayRouter } from '../services/relayRouterSwap';
+import { buyTokenWithETH, sellTokenForETH } from '../services/swap';
+import { config } from '../utils/config';
+import { telegramBot } from './telegram';
+import { checkUserTokenInfo } from '../services/info';
+import { stateService } from '../services/state';
 
-// Initialize Telegram bot
-export const telegramBot = new TelegramBot(config.TELEGRAM_BOT_TOKEN, {
-  polling: true,
-});
-
-// Send new pair alert
-export async function sendPairAlert(pairInfo: PairInfo, exchange: string): Promise<void> {
-  const nonWETHToken = getNonWETHToken(pairInfo);
-
-  const message =
-    `🎯 *NEW HIGH-LIQUIDITY TOKEN DETECTED*\n\n` +
-    `🏪 Exchange: *${exchange}*\n` +
-    `🪙 Token: *${nonWETHToken.symbol}* (${nonWETHToken.name})\n` +
-    `📍 Address: \`${nonWETHToken.address}\`\n` +
-    `💧 Liquidity: *${pairInfo.liquidityETH.toFixed(2)} ETH*\n` +
-    `📊 Total Supply: *${new BigNumber(nonWETHToken.totalSupply)
-      .dividedBy(new BigNumber(10).pow(nonWETHToken.decimals))
-      .toFormat()}*\n` +
-    `🔗 Pair: \`${pairInfo.pairAddress}\`\n` +
-    `🔗 DexScreener URL: [Open Link](http://dexscreener.com/base/${nonWETHToken.address})`;
-
-  try {
-    await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true,
-    });
-  } catch (error) {
-    console.error('Error sending Telegram message:', error);
-  }
-  console.log(
-    `🚨 ALERT: New token ${
-      nonWETHToken.symbol
-    } with ${pairInfo.liquidityETH.toFixed(2)} ETH liquidity`
-  );
-}
-
-// Send big buy alert
-export async function sendBuyAlert(data: BigBuyData): Promise<void> {
-  const tokenSymbol = data.tokenInfo?.symbol || 'Unknown';
-  const tokenAddress = data.tokenInfo?.address || 'Unknown';
-
-  const message =
-    `🔥 *BIG BUY DETECTED ON BASE*\n\n` +
-    `👤 Buyer: \`${data.sender}\`\n` +
-    `💰 Amount: *${data.ethAmount.toFixed(4)} ETH*\n` +
-    `🪙 Token: *${tokenSymbol}*\n` +
-    `📍 Token Address: \`${tokenAddress}\`\n` +
-    `🏪 Router: *${data.routerName}*\n` +
-    `🔗 TX: \`${data.txHash}\`\n\n` +
-    `💡 *Someone just made a big purchase!*`;
-
-  try {
-    await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true,
-    });
-  } catch (error) {
-    console.error('Error sending Telegram message:', error);
-  }
-  console.log(`🔥 BIG BUY: ${data.ethAmount.toFixed(4)} ETH spent on ${tokenSymbol}`);
-}
-
-// Send bot startup message
-export async function sendStartupMessage(): Promise<void> {
-  const message =
-    `🤖 Febry's Defi Bot is now ONLINE!\n\n` +
-    `📊 Monitoring new tokens with high liquidity...\n\n` +
-    `💬 Use /help to see available commands`;
-
-  try {
-    await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true,
-    });
-  } catch (error) {
-    console.error('Error sending Telegram message:', error);
-  }
-}
-
-// Send swap execution message
-export async function sendSwapExecutionMessage(data: {
-  tokenAddress: string;
-  ethAmount: number;
-  routerName: string;
-  txHash: string;
-  walletAddress: string;
-  isSell?: boolean;
-}): Promise<void> {
-  const action = data.isSell ? 'SOLD' : 'BOUGHT';
-  const amountText = data.isSell ? 'tokens' : `${data.ethAmount.toFixed(4)} ETH`;
-
-  const message =
-    `🤖 *SWAP ${action}*\n\n` +
-    `💰 Amount: *${amountText}*\n` +
-    `🪙 Token Address: \`${data.tokenAddress}\`\n` +
-    `🏪 Router: *${data.routerName}*\n` +
-    `👛 Wallet: \`${data.walletAddress}\`\n` +
-    `🔗 TX: \`${data.txHash}\`\n\n` +
-    `✅ *Swap executed successfully!*`;
-
-  try {
-    await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true,
-    });
-  } catch (error) {
-    console.error('Error sending Telegram message:', error);
-  }
-  console.log(`🤖 SWAP: ${action} ${amountText} of ${data.tokenAddress}`);
-}
-
-// Setup Telegram command handlers
-export function setupCommandHandlers(): void {
-  telegramBot.onText(/\/start/, async msg => {
-    const chatId = msg.chat.id;
-    if (BaseMonitoring.statusMonitoring()) {
-      await telegramBot.sendMessage(chatId, '⚠️ Monitoring is already running');
-      return;
-    }
-    BaseMonitoring.startMonitor();
-    telegramBot.sendMessage(chatId, '🟢 Monitoring started');
-  });
-
-  telegramBot.onText(/\/stop/, async msg => {
-    const chatId = msg.chat.id;
-    if (!BaseMonitoring.statusMonitoring()) {
-      await telegramBot.sendMessage(chatId, '⚠️ Monitoring is not running');
-      return;
-    }
-    BaseMonitoring.stopMonitor();
-    telegramBot.sendMessage(chatId, '🛑 Monitoring stopped');
-  });
-
-  telegramBot.onText(/\/status/, async msg => {
-    const chatId = msg.chat.id;
-    const status = BaseMonitoring.statusMonitoring() ? 'Running 🟢' : 'Stopped 🛑';
-    await telegramBot.sendMessage(chatId, `Monitoring Status: ${status}`);
-  });
-
+export function commandHandlers(): void {
   // Handle /swap command
   telegramBot.onText(/\/buy (.+)/, async (msg, match) => {
     try {
@@ -261,27 +118,6 @@ export function setupCommandHandlers(): void {
         console.error('Error sending Telegram error message:', telegramError);
       }
     }
-  });
-
-  // Handle /help command
-  telegramBot.onText(/\/help/, async msg => {
-    const chatId = msg.chat.id;
-
-    // Check if the chat ID matches the configured chat ID
-    if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
-      await telegramBot.sendMessage(chatId, '⛔ Unauthorized access');
-      return;
-    }
-
-    let helpMessage = "🤖 *Febry's Defi Bot Commands*\n";
-
-    for (var e of commandList) {
-      helpMessage += `\n${e.command} - *${e.description}*`;
-    }
-
-    await telegramBot.sendMessage(chatId, helpMessage, {
-      parse_mode: 'Markdown',
-    });
   });
 
   // Handle /sell command
@@ -406,24 +242,6 @@ export function setupCommandHandlers(): void {
     }
   });
 
-  // check address info
-  telegramBot.onText(/\/myinfo/, async msg => {
-    const chatId = msg.chat.id;
-
-    // Check if the chat ID matches the configured chat ID
-    if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
-      await telegramBot.sendMessage(chatId, '⛔ Unauthorized access');
-      return;
-    }
-
-    try {
-      const info = checkAddressInfo();
-      await telegramBot.sendMessage(chatId, `🔒 Check your balance here ${info}`);
-    } catch (error) {
-      await telegramBot.sendMessage(chatId, `Error checking address info: ${error}`);
-    }
-  });
-
   telegramBot.onText(/\/tokenbalance (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
 
@@ -451,5 +269,35 @@ export function setupCommandHandlers(): void {
     }
   });
 
-  console.log('🤖 Telegram command handlers set up');
+  telegramBot.onText(/\/chain/, async msg => {
+    const chatId = msg.chat.id;
+
+    // Check if the chat ID matches the configured chat ID
+    if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
+      await telegramBot.sendMessage(chatId, '⛔ Unauthorized access');
+      return;
+    }
+
+    // Stop monitoring
+    const chain = stateService.getConfig().current_chain;
+    await telegramBot.sendMessage(chatId, `⛓️ Current chain: *${chain}*`, {
+      parse_mode: 'Markdown',
+    });
+  });
+
+  telegramBot.onText(/\/chainlist/, async msg => {
+    const chatId = msg.chat.id;
+
+    // Check if the chat ID matches the configured chat ID
+    if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
+      await telegramBot.sendMessage(chatId, '⛔ Unauthorized access');
+      return;
+    }
+
+    // Get the list of supported chains
+    const supportedChains = stateService.getConfig().chains || [];
+    await telegramBot.sendMessage(chatId, `⛓️ Supported chains: *${supportedChains.join(', ')}*`, {
+      parse_mode: 'Markdown',
+    });
+  });
 }

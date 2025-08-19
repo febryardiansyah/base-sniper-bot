@@ -1,5 +1,5 @@
 import { BaseContracts } from './contracts/contracts';
-import { sendStartupMessage, setupCommandHandlers } from './services/telegram';
+import { sendStartupMessage, setupCommandHandlers } from './telegram/telegram';
 
 export class App {
   async start(): Promise<void> {

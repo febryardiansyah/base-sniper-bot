@@ -3,7 +3,7 @@ import { config } from '../../utils/config';
 import { BigBuyData, PairInfo } from '../../interface/types';
 import { BaseContracts } from '../../contracts/contracts';
 import { analyzePair, shouldAlert, getNonWETHToken } from '../pairAnalyzer';
-import { sendPairAlert, sendBuyAlert, telegramBot } from '../../services/telegram';
+import { MonitoringTelegram, telegramBot } from '../../telegram/telegram';
 import { BaseProviders } from '../providers';
 import { sleep } from '../../utils/utils';
 import { checkTokenInfo, checkUserTokenInfo } from '../../services/info';
@@ -81,7 +81,7 @@ function monitorNewPairs(): void {
             uniswapV2Blacklist.includes(pairInfo!.token1.symbol);
 
           if (isShouldAlert && !isBlackListed) {
-            await sendPairAlert(pairInfo, factoryName);
+            await MonitoringTelegram.sendPairAlert(pairInfo, factoryName);
           }
         } catch (error) {
           console.error(`Error processing new pair ${pairAddress}:`, error);
@@ -386,7 +386,7 @@ function monitorBigBuys(): void {
                 routerName,
                 txHash,
               };
-              await sendBuyAlert(buyData);
+              await MonitoringTelegram.sendBuyAlert(buyData);
             }
           }
         } catch (error) {

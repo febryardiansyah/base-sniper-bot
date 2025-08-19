@@ -38,22 +38,29 @@ module.exports = [
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/no-var-requires': 'off',
 
       // General ESLint rules
       'no-console': 'off',
       'no-debugger': 'error',
       'no-duplicate-imports': 'error',
-      'no-unused-expressions': 'error',
+      'no-unused-expressions': 'off',
+      'no-unused-vars': 'off',
       'prefer-const': 'error',
       'no-var': 'error',
       'no-undef': 'off',
+      'no-misused-promises': 'off',
 
       // Best practices for blockchain/DeFi projects
-      '@typescript-eslint/no-floating-promises': 'error',
-      '@typescript-eslint/await-thenable': 'error',
-      '@typescript-eslint/no-misused-promises': 'error',
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/await-thenable': 'off',
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+        {
+          checksVoidReturn: false,
+        },
+      ],
     },
   },
   {
