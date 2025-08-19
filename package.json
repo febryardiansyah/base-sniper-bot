@@ -12,7 +12,12 @@
     "start": "node dist/index.js",
     "dev": "ts-node index.ts",
     "clean": "rm -rf dist",
-    "setup": "cp .env.example .env && echo 'Please configure your .env file with your API keys'"
+    "setup": "cp .env.example .env && echo 'Please configure your .env file with your API keys'",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "type-check": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
@@ -20,15 +25,23 @@
   "description": "",
   "dependencies": {
     "axios": "^1.8.4",
+    "bignumber.js": "^9.1.2",
     "dotenv": "^16.5.0",
     "ethers": "^6.13.5",
-    "ts-node": "^10.9.2",
     "node-telegram-bot-api": "^0.66.0",
-    "bignumber.js": "^9.1.2"
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
+    "@eslint/js": "^9.33.0",
     "@types/node": "^22.13.13",
     "@types/node-telegram-bot-api": "^0.64.7",
+    "@typescript-eslint/eslint-plugin": "^8.40.0",
+    "@typescript-eslint/parser": "^8.40.0",
+    "eslint": "^9.33.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "globals": "^16.3.0",
+    "prettier": "^3.6.2",
     "typescript": "^5.8.3"
   }
 }

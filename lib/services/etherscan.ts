@@ -1,23 +1,21 @@
-import axios from "axios";
-import { config } from "../utils/config";
-import { getTimeAgo } from "./../utils/utils";
-import { ITransaction, IEtherscanResponse } from "../interface/types";
+import axios from 'axios';
+import { config } from '../utils/config';
+import { getTimeAgo } from './../utils/utils';
+import { ITransaction, IEtherscanResponse } from '../interface/types';
 
 const key = config.ETHER_SCAN_API_KEY;
 const baseUrl = config.ETHER_SCAN_API;
 const baseChainId = config.BASE_CHAIN_ID;
 
-export async function getWalletTransactions(
-  walletAddress: string
-): Promise<IEtherscanResponse> {
+export async function getWalletTransactions(walletAddress: string): Promise<IEtherscanResponse> {
   const params = new URLSearchParams({
     chainid: String(baseChainId),
-    module: "account",
-    action: "txlist",
+    module: 'account',
+    action: 'txlist',
     address: walletAddress,
-    startblock: "0",
-    endblock: "99999999",
-    sort: "asc",
+    startblock: '0',
+    endblock: '99999999',
+    sort: 'asc',
     apikey: key,
   });
   try {
@@ -32,7 +30,7 @@ export async function getWalletAge(walletAddress: string) {
   try {
     const data = await getWalletTransactions(walletAddress);
 
-    if (data.status === "1" && data.result.length > 0) {
+    if (data.status === '1' && data.result.length > 0) {
       const firstTx = data.result[0];
       const timestamp = parseInt(firstTx.timeStamp);
       return {
@@ -55,12 +53,12 @@ export async function getFirstIncomingTransaction(walletAddress: string) {
   try {
     const data = await getWalletTransactions(walletAddress);
 
-    if (data.status === "1" && data.result.length > 0) {
+    if (data.status === '1' && data.result.length > 0) {
       const firstIncoming = data.result.find(
-        (tx) =>
+        tx =>
           tx.to.toLowerCase() === walletAddress.toLowerCase() &&
-          tx.isError === "0" &&
-          tx.txreceipt_status === "1"
+          tx.isError === '0' &&
+          tx.txreceipt_status === '1'
       );
 
       if (firstIncoming) {
@@ -88,12 +86,12 @@ export async function getFirstOutgoingTransaction(walletAddress: string) {
   try {
     const data = await getWalletTransactions(walletAddress);
 
-    if (data.status === "1" && data.result.length > 0) {
+    if (data.status === '1' && data.result.length > 0) {
       const firstOutgoing = data.result.find(
-        (tx) =>
+        tx =>
           tx.from.toLowerCase() === walletAddress.toLowerCase() &&
-          tx.isError === "0" &&
-          tx.txreceipt_status === "1"
+          tx.isError === '0' &&
+          tx.txreceipt_status === '1'
       );
 
       if (firstOutgoing) {
@@ -121,7 +119,7 @@ export async function getFirstBlockAppearance(walletAddress: string) {
   try {
     const data = await getWalletTransactions(walletAddress);
 
-    if (data.status === "1" && data.result.length > 0) {
+    if (data.status === '1' && data.result.length > 0) {
       const firstTx = data.result[0];
       const timestamp = parseInt(firstTx.timeStamp);
       return {
@@ -144,31 +142,29 @@ export async function getWalletAnalysis(walletAddress: string) {
   try {
     const data = await getWalletTransactions(walletAddress);
 
-    if (data.status === "1" && data.result.length > 0) {
+    if (data.status === '1' && data.result.length > 0) {
       const transactions = data.result;
       const firstTx = transactions[0];
 
       const firstIncoming = transactions.find(
-        (tx) =>
+        tx =>
           tx.to.toLowerCase() === walletAddress.toLowerCase() &&
-          tx.isError === "0" &&
-          tx.txreceipt_status === "1"
+          tx.isError === '0' &&
+          tx.txreceipt_status === '1'
       );
 
       const firstOutgoing = transactions.find(
-        (tx) =>
+        tx =>
           tx.from.toLowerCase() === walletAddress.toLowerCase() &&
-          tx.isError === "0" &&
-          tx.txreceipt_status === "1"
+          tx.isError === '0' &&
+          tx.txreceipt_status === '1'
       );
 
       return {
         address: walletAddress,
         firstActivation: firstTx
           ? {
-              timestamp: new Date(
-                parseInt(firstTx.timeStamp) * 1000
-              ).toISOString(),
+              timestamp: new Date(parseInt(firstTx.timeStamp) * 1000).toISOString(),
               time_ago: getTimeAgo(parseInt(firstTx.timeStamp)),
               blockNumber: parseInt(firstTx.blockNumber),
               txHash: firstTx.hash,
@@ -176,9 +172,7 @@ export async function getWalletAnalysis(walletAddress: string) {
           : null,
         firstIncoming: firstIncoming
           ? {
-              timestamp: new Date(
-                parseInt(firstIncoming.timeStamp) * 1000
-              ).toISOString(),
+              timestamp: new Date(parseInt(firstIncoming.timeStamp) * 1000).toISOString(),
               time_ago: getTimeAgo(parseInt(firstIncoming.timeStamp)),
               blockNumber: parseInt(firstIncoming.blockNumber),
               txHash: firstIncoming.hash,
@@ -188,9 +182,7 @@ export async function getWalletAnalysis(walletAddress: string) {
           : null,
         firstOutgoing: firstOutgoing
           ? {
-              timestamp: new Date(
-                parseInt(firstOutgoing.timeStamp) * 1000
-              ).toISOString(),
+              timestamp: new Date(parseInt(firstOutgoing.timeStamp) * 1000).toISOString(),
               time_ago: getTimeAgo(parseInt(firstOutgoing.timeStamp)),
               blockNumber: parseInt(firstOutgoing.blockNumber),
               txHash: firstOutgoing.hash,
@@ -201,9 +193,7 @@ export async function getWalletAnalysis(walletAddress: string) {
         firstBlockAppearance: firstTx
           ? {
               blockNumber: parseInt(firstTx.blockNumber),
-              timestamp: new Date(
-                parseInt(firstTx.timeStamp) * 1000
-              ).toISOString(),
+              timestamp: new Date(parseInt(firstTx.timeStamp) * 1000).toISOString(),
               time_ago: getTimeAgo(parseInt(firstTx.timeStamp)),
               txHash: firstTx.hash,
             }

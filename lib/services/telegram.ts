@@ -1,18 +1,15 @@
-import TelegramBot from "node-telegram-bot-api";
-import BigNumber from "bignumber.js";
-import { config } from "../utils/config";
-import { PairInfo, BigBuyData } from "../interface/types";
-import { getNonWETHToken } from "../blockchain/pairAnalyzer";
-import { buyTokenWithETH, sellTokenForETH } from "./swap";
-import {
-  buyTokenWithRelayRouter,
-  sellTokenWithRelayRouter,
-} from "./relayRouterSwap";
-import { ethers } from "ethers";
-import { checkAddressInfo, checkUserTokenInfo } from "./info";
-import { commandList } from "../utils/utils";
-import { BaseProviders } from "../blockchain/providers";
-import { BaseMonitoring } from "../blockchain/monitoring/monitoring";
+import TelegramBot from 'node-telegram-bot-api';
+import BigNumber from 'bignumber.js';
+import { config } from '../utils/config';
+import { PairInfo, BigBuyData } from '../interface/types';
+import { getNonWETHToken } from '../blockchain/pairAnalyzer';
+import { buyTokenWithETH, sellTokenForETH } from './swap';
+import { buyTokenWithRelayRouter, sellTokenWithRelayRouter } from './relayRouterSwap';
+import { ethers } from 'ethers';
+import { checkAddressInfo, checkUserTokenInfo } from './info';
+import { commandList } from '../utils/utils';
+import { BaseProviders } from '../blockchain/providers';
+import { BaseMonitoring } from '../blockchain/monitoring/monitoring';
 
 // Initialize Telegram bot
 export const telegramBot = new TelegramBot(config.TELEGRAM_BOT_TOKEN, {
@@ -20,10 +17,7 @@ export const telegramBot = new TelegramBot(config.TELEGRAM_BOT_TOKEN, {
 });
 
 // Send new pair alert
-export async function sendPairAlert(
-  pairInfo: PairInfo,
-  exchange: string
-): Promise<void> {
+export async function sendPairAlert(pairInfo: PairInfo, exchange: string): Promise<void> {
   const nonWETHToken = getNonWETHToken(pairInfo);
 
   const message =
@@ -40,11 +34,11 @@ export async function sendPairAlert(
 
   try {
     await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
-      parse_mode: "Markdown",
+      parse_mode: 'Markdown',
       disable_web_page_preview: true,
     });
   } catch (error) {
-    console.error("Error sending Telegram message:", error);
+    console.error('Error sending Telegram message:', error);
   }
   console.log(
     `🚨 ALERT: New token ${
@@ -55,8 +49,8 @@ export async function sendPairAlert(
 
 // Send big buy alert
 export async function sendBuyAlert(data: BigBuyData): Promise<void> {
-  const tokenSymbol = data.tokenInfo?.symbol || "Unknown";
-  const tokenAddress = data.tokenInfo?.address || "Unknown";
+  const tokenSymbol = data.tokenInfo?.symbol || 'Unknown';
+  const tokenAddress = data.tokenInfo?.address || 'Unknown';
 
   const message =
     `🔥 *BIG BUY DETECTED ON BASE*\n\n` +
@@ -70,15 +64,13 @@ export async function sendBuyAlert(data: BigBuyData): Promise<void> {
 
   try {
     await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
-      parse_mode: "Markdown",
+      parse_mode: 'Markdown',
       disable_web_page_preview: true,
     });
   } catch (error) {
-    console.error("Error sending Telegram message:", error);
+    console.error('Error sending Telegram message:', error);
   }
-  console.log(
-    `🔥 BIG BUY: ${data.ethAmount.toFixed(4)} ETH spent on ${tokenSymbol}`
-  );
+  console.log(`🔥 BIG BUY: ${data.ethAmount.toFixed(4)} ETH spent on ${tokenSymbol}`);
 }
 
 // Send bot startup message
@@ -90,11 +82,11 @@ export async function sendStartupMessage(): Promise<void> {
 
   try {
     await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
-      parse_mode: "Markdown",
+      parse_mode: 'Markdown',
       disable_web_page_preview: true,
     });
   } catch (error) {
-    console.error("Error sending Telegram message:", error);
+    console.error('Error sending Telegram message:', error);
   }
 }
 
@@ -107,10 +99,8 @@ export async function sendSwapExecutionMessage(data: {
   walletAddress: string;
   isSell?: boolean;
 }): Promise<void> {
-  const action = data.isSell ? "SOLD" : "BOUGHT";
-  const amountText = data.isSell
-    ? "tokens"
-    : `${data.ethAmount.toFixed(4)} ETH`;
+  const action = data.isSell ? 'SOLD' : 'BOUGHT';
+  const amountText = data.isSell ? 'tokens' : `${data.ethAmount.toFixed(4)} ETH`;
 
   const message =
     `🤖 *SWAP ${action}*\n\n` +
@@ -123,40 +113,40 @@ export async function sendSwapExecutionMessage(data: {
 
   try {
     await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
-      parse_mode: "Markdown",
+      parse_mode: 'Markdown',
       disable_web_page_preview: true,
     });
   } catch (error) {
-    console.error("Error sending Telegram message:", error);
+    console.error('Error sending Telegram message:', error);
   }
   console.log(`🤖 SWAP: ${action} ${amountText} of ${data.tokenAddress}`);
 }
 
 // Setup Telegram command handlers
 export function setupCommandHandlers(): void {
-  telegramBot.onText(/\/start/, async (msg) => {
+  telegramBot.onText(/\/start/, async msg => {
     const chatId = msg.chat.id;
     if (BaseMonitoring.statusMonitoring()) {
-      await telegramBot.sendMessage(chatId, "⚠️ Monitoring is already running");
+      await telegramBot.sendMessage(chatId, '⚠️ Monitoring is already running');
       return;
     }
     BaseMonitoring.startMonitor();
-    telegramBot.sendMessage(chatId, "🟢 Monitoring started");
+    telegramBot.sendMessage(chatId, '🟢 Monitoring started');
   });
 
-  telegramBot.onText(/\/stop/, async (msg) => {
+  telegramBot.onText(/\/stop/, async msg => {
     const chatId = msg.chat.id;
     if (!BaseMonitoring.statusMonitoring()) {
-      await telegramBot.sendMessage(chatId, "⚠️ Monitoring is not running");
+      await telegramBot.sendMessage(chatId, '⚠️ Monitoring is not running');
       return;
     }
     BaseMonitoring.stopMonitor();
-    telegramBot.sendMessage(chatId, "🛑 Monitoring stopped");
+    telegramBot.sendMessage(chatId, '🛑 Monitoring stopped');
   });
 
-  telegramBot.onText(/\/status/, async (msg) => {
+  telegramBot.onText(/\/status/, async msg => {
     const chatId = msg.chat.id;
-    const status = BaseMonitoring.statusMonitoring() ? "Running 🟢" : "Stopped 🛑";
+    const status = BaseMonitoring.statusMonitoring() ? 'Running 🟢' : 'Stopped 🛑';
     await telegramBot.sendMessage(chatId, `Monitoring Status: ${status}`);
   });
 
@@ -167,20 +157,20 @@ export function setupCommandHandlers(): void {
 
       // Check if the chat ID matches the configured chat ID
       if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
-        await telegramBot.sendMessage(chatId, "⛔ Unauthorized access");
+        await telegramBot.sendMessage(chatId, '⛔ Unauthorized access');
         return;
       }
 
       // Parse command arguments
-      const args = (match ?? "")[1].split(" ");
+      const args = (match ?? '')[1].split(' ');
 
       if (args.length < 2) {
         await telegramBot.sendMessage(
           chatId,
-          "⚠️ Invalid format. Use: /buy <token_address> <eth_amount> [router_index] [slippage]\n\n" +
-            "Example: /buy 0x1234...abcd 0.1 0 5\n" +
-            "Router index: 0 for Uniswap V2, 1 for Aerodrome\n" +
-            "Slippage: percentage (default 5%)"
+          '⚠️ Invalid format. Use: /buy <token_address> <eth_amount> [router_index] [slippage]\n\n' +
+            'Example: /buy 0x1234...abcd 0.1 0 5\n' +
+            'Router index: 0 for Uniswap V2, 1 for Aerodrome\n' +
+            'Slippage: percentage (default 5%)'
         );
         return;
       }
@@ -192,26 +182,20 @@ export function setupCommandHandlers(): void {
 
       // Validate inputs
       if (isNaN(ethAmount) || ethAmount <= 0) {
-        await telegramBot.sendMessage(
-          chatId,
-          "⚠️ Invalid ETH amount. Must be a positive number."
-        );
+        await telegramBot.sendMessage(chatId, '⚠️ Invalid ETH amount. Must be a positive number.');
         return;
       }
 
       if (![0, 1].includes(routerIndex)) {
         await telegramBot.sendMessage(
           chatId,
-          "⚠️ Invalid router index. Use 0 for Uniswap V2 or 1 for Aerodrome."
+          '⚠️ Invalid router index. Use 0 for Uniswap V2 or 1 for Aerodrome.'
         );
         return;
       }
 
       if (isNaN(slippage) || slippage < 1 || slippage > 100) {
-        await telegramBot.sendMessage(
-          chatId,
-          "⚠️ Invalid slippage. Must be between 1 and 100."
-        );
+        await telegramBot.sendMessage(chatId, '⚠️ Invalid slippage. Must be between 1 and 100.');
         return;
       }
 
@@ -219,17 +203,14 @@ export function setupCommandHandlers(): void {
       if (!config.WALLET_PRIVATE_KEY) {
         await telegramBot.sendMessage(
           chatId,
-          "⚠️ No wallet private key configured. Cannot execute swap."
+          '⚠️ No wallet private key configured. Cannot execute swap.'
         );
         return;
       }
 
       // Validate token address
       if (!ethers.isAddress(tokenAddress)) {
-        await telegramBot.sendMessage(
-          chatId,
-          "⚠️ Invalid token address format."
-        );
+        await telegramBot.sendMessage(chatId, '⚠️ Invalid token address format.');
         return;
       }
 
@@ -240,22 +221,16 @@ export function setupCommandHandlers(): void {
       );
 
       // Execute the swap using Relay Router
-      let buyResult = await buyTokenWithRelayRouter(
-        tokenAddress,
-        ethAmount,
-        slippage
-      );
+      let buyResult = await buyTokenWithRelayRouter(tokenAddress, ethAmount, slippage);
 
       // If Relay Router fails, fall back to traditional swap
       if (!buyResult) {
-        console.log(
-          "⚠️ Relay Router swap failed, falling back to traditional swap..."
-        );
+        console.log('⚠️ Relay Router swap failed, falling back to traditional swap...');
         buyResult = await buyTokenWithETH(tokenAddress, ethAmount);
         if (buyResult) {
           await telegramBot.sendMessage(
             chatId,
-            "⚠️ Relay Router swap failed, used traditional swap instead."
+            '⚠️ Relay Router swap failed, used traditional swap instead.'
           );
         }
       }
@@ -269,35 +244,32 @@ export function setupCommandHandlers(): void {
               buyResult.tokenInfo.decimals
             )} *${buyResult.tokenInfo.symbol}*`,
           {
-            parse_mode: "Markdown",
+            parse_mode: 'Markdown',
           }
         );
       } else {
-        await telegramBot.sendMessage(
-          chatId,
-          "❌ Swap failed. Check console logs for details."
-        );
+        await telegramBot.sendMessage(chatId, '❌ Swap failed. Check console logs for details.');
       }
     } catch (error) {
-      console.error("Error handling swap command:", error);
+      console.error('Error handling swap command:', error);
       try {
         await telegramBot.sendMessage(
           msg.chat.id,
           `❌ An error occurred while processing your swap request.\n ${error}`
         );
       } catch (telegramError) {
-        console.error("Error sending Telegram error message:", telegramError);
+        console.error('Error sending Telegram error message:', telegramError);
       }
     }
   });
 
   // Handle /help command
-  telegramBot.onText(/\/help/, async (msg) => {
+  telegramBot.onText(/\/help/, async msg => {
     const chatId = msg.chat.id;
 
     // Check if the chat ID matches the configured chat ID
     if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
-      await telegramBot.sendMessage(chatId, "⛔ Unauthorized access");
+      await telegramBot.sendMessage(chatId, '⛔ Unauthorized access');
       return;
     }
 
@@ -308,7 +280,7 @@ export function setupCommandHandlers(): void {
     }
 
     await telegramBot.sendMessage(chatId, helpMessage, {
-      parse_mode: "Markdown",
+      parse_mode: 'Markdown',
     });
   });
 
@@ -319,20 +291,20 @@ export function setupCommandHandlers(): void {
 
       // Check if the chat ID matches the configured chat ID
       if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
-        await telegramBot.sendMessage(chatId, "⛔ Unauthorized access");
+        await telegramBot.sendMessage(chatId, '⛔ Unauthorized access');
         return;
       }
 
       // Parse command arguments
-      const args = (match ?? "")[1].split(" ");
+      const args = (match ?? '')[1].split(' ');
 
       if (args.length < 2) {
         await telegramBot.sendMessage(
           chatId,
-          "⚠️ Invalid format. Use: /sell <token_address> <token_amount> [router_index] [slippage]\n\n" +
-            "Example: /sell 0x1234...abcd 100 0 5\n" +
-            "Router index: 0 for Uniswap V2, 1 for Aerodrome\n" +
-            "Slippage: percentage (default 5%)\n\n" +
+          '⚠️ Invalid format. Use: /sell <token_address> <token_amount> [router_index] [slippage]\n\n' +
+            'Example: /sell 0x1234...abcd 100 0 5\n' +
+            'Router index: 0 for Uniswap V2, 1 for Aerodrome\n' +
+            'Slippage: percentage (default 5%)\n\n' +
             "Use 'max' as token_amount to sell all tokens"
         );
         return;
@@ -344,7 +316,7 @@ export function setupCommandHandlers(): void {
       const slippage = args.length > 3 ? parseInt(args[3]) : 5;
 
       // Validate inputs
-      if (tokenAmount.toLowerCase() !== "max") {
+      if (tokenAmount.toLowerCase() !== 'max') {
         const amount = parseFloat(tokenAmount);
         if (isNaN(amount) || amount <= 0) {
           await telegramBot.sendMessage(
@@ -358,16 +330,13 @@ export function setupCommandHandlers(): void {
       if (![0, 1].includes(routerIndex)) {
         await telegramBot.sendMessage(
           chatId,
-          "⚠️ Invalid router index. Use 0 for Uniswap V2 or 1 for Aerodrome."
+          '⚠️ Invalid router index. Use 0 for Uniswap V2 or 1 for Aerodrome.'
         );
         return;
       }
 
       if (isNaN(slippage) || slippage < 1 || slippage > 100) {
-        await telegramBot.sendMessage(
-          chatId,
-          "⚠️ Invalid slippage. Must be between 1 and 100."
-        );
+        await telegramBot.sendMessage(chatId, '⚠️ Invalid slippage. Must be between 1 and 100.');
         return;
       }
 
@@ -375,17 +344,14 @@ export function setupCommandHandlers(): void {
       if (!config.WALLET_PRIVATE_KEY) {
         await telegramBot.sendMessage(
           chatId,
-          "⚠️ No wallet private key configured. Cannot execute swap."
+          '⚠️ No wallet private key configured. Cannot execute swap.'
         );
         return;
       }
 
       // Validate token address
       if (!ethers.isAddress(tokenAddress)) {
-        await telegramBot.sendMessage(
-          chatId,
-          "⚠️ Invalid token address format."
-        );
+        await telegramBot.sendMessage(chatId, '⚠️ Invalid token address format.');
         return;
       }
 
@@ -393,31 +359,21 @@ export function setupCommandHandlers(): void {
       await telegramBot.sendMessage(
         chatId,
         `🔄 Processing swap to sell ${
-          tokenAmount === "max" ? "all" : tokenAmount
+          tokenAmount === 'max' ? 'all' : tokenAmount
         } tokens of ${tokenAddress} for ETH...`
       );
 
       // Execute the swap using Relay Router
-      let sellResult = await sellTokenWithRelayRouter(
-        tokenAddress,
-        tokenAmount,
-        slippage
-      );
+      let sellResult = await sellTokenWithRelayRouter(tokenAddress, tokenAmount, slippage);
 
       // If Relay Router fails, fall back to traditional swap
       if (!sellResult) {
-        console.log(
-          "⚠️ Relay Router swap failed, falling back to traditional swap..."
-        );
-        sellResult = await sellTokenForETH(
-          tokenAddress,
-          tokenAmount,
-          routerIndex
-        );
+        console.log('⚠️ Relay Router swap failed, falling back to traditional swap...');
+        sellResult = await sellTokenForETH(tokenAddress, tokenAmount, routerIndex);
         if (sellResult) {
           await telegramBot.sendMessage(
             chatId,
-            "⚠️ Relay Router swap failed, used traditional swap instead."
+            '⚠️ Relay Router swap failed, used traditional swap instead.'
           );
         }
       }
@@ -431,49 +387,40 @@ export function setupCommandHandlers(): void {
               sellResult.tokenInfo.decimals
             )} *${sellResult.tokenInfo.symbol}*`,
           {
-            parse_mode: "Markdown",
+            parse_mode: 'Markdown',
           }
         );
       } else {
-        await telegramBot.sendMessage(
-          chatId,
-          "❌ Sell failed. Check console logs for details."
-        );
+        await telegramBot.sendMessage(chatId, '❌ Sell failed. Check console logs for details.');
       }
     } catch (error) {
-      console.error("Error handling sell command:", error);
+      console.error('Error handling sell command:', error);
       try {
         await telegramBot.sendMessage(
           msg.chat.id,
           `❌ An error occurred while processing your sell request.\n ${error}`
         );
       } catch (telegramError) {
-        console.error("Error sending Telegram error message:", telegramError);
+        console.error('Error sending Telegram error message:', telegramError);
       }
     }
   });
 
   // check address info
-  telegramBot.onText(/\/myinfo/, async (msg) => {
+  telegramBot.onText(/\/myinfo/, async msg => {
     const chatId = msg.chat.id;
 
     // Check if the chat ID matches the configured chat ID
     if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
-      await telegramBot.sendMessage(chatId, "⛔ Unauthorized access");
+      await telegramBot.sendMessage(chatId, '⛔ Unauthorized access');
       return;
     }
 
     try {
       const info = checkAddressInfo();
-      await telegramBot.sendMessage(
-        chatId,
-        `🔒 Check your balance here ${info}`
-      );
+      await telegramBot.sendMessage(chatId, `🔒 Check your balance here ${info}`);
     } catch (error) {
-      await telegramBot.sendMessage(
-        chatId,
-        `Error checking address info: ${error}`
-      );
+      await telegramBot.sendMessage(chatId, `Error checking address info: ${error}`);
     }
   });
 
@@ -482,11 +429,11 @@ export function setupCommandHandlers(): void {
 
     // Check if the chat ID matches the configured chat ID
     if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
-      await telegramBot.sendMessage(chatId, "⛔ Unauthorized access");
+      await telegramBot.sendMessage(chatId, '⛔ Unauthorized access');
       return;
     }
 
-    const args = (match ?? "")[1].split(" ");
+    const args = (match ?? '')[1].split(' ');
     const tokenAddress = args[0];
 
     try {
@@ -497,15 +444,12 @@ export function setupCommandHandlers(): void {
           balance.balance.toString(),
           balance.decimals
         )} *${balance.symbol}*`,
-        { parse_mode: "Markdown" }
+        { parse_mode: 'Markdown' }
       );
     } catch (error) {
-      await telegramBot.sendMessage(
-        chatId,
-        `Error checking token balance: ${error}`
-      );
+      await telegramBot.sendMessage(chatId, `Error checking token balance: ${error}`);
     }
   });
 
-  console.log("🤖 Telegram command handlers set up");
+  console.log('🤖 Telegram command handlers set up');
 }

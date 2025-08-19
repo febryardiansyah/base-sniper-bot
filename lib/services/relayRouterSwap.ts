@@ -1,16 +1,12 @@
-import { ethers } from "ethers";
-import axios from "axios";
-import { config } from "../utils/config";
-import { BaseProviders } from "../blockchain/providers";
-import {
-  IRelayQuoteResponse,
-  IRelaySwapStatusResponse,
-  ISwapResult,
-} from "../interface/types";
-import { checkUserTokenInfo } from "./info";
+import { ethers } from 'ethers';
+import axios from 'axios';
+import { config } from '../utils/config';
+import { BaseProviders } from '../blockchain/providers';
+import { IRelayQuoteResponse, IRelaySwapStatusResponse, ISwapResult } from '../interface/types';
+import { checkUserTokenInfo } from './info';
 
 // Constants
-const RELAY_API_URL = "https://api.relay.link";
+const RELAY_API_URL = 'https://api.relay.link';
 
 // Create wallet instance
 const wallet = new ethers.Wallet(config.WALLET_PRIVATE_KEY!, BaseProviders.baseProvider);
@@ -19,8 +15,8 @@ async function getQuote({
   originCurrency = config.ETH_ADDRESS,
   destinationCurrency,
   amount, // Amount in wei
-  tradeType = "EXACT_INPUT", // EXACT_INPUT, EXACT_OUTPUT, or EXPECTED_OUTPUT
-  slippageTolerance = "50", // 0.5% slippage by default
+  tradeType = 'EXACT_INPUT', // EXACT_INPUT, EXACT_OUTPUT, or EXPECTED_OUTPUT
+  slippageTolerance = '50', // 0.5% slippage by default
 }: {
   originCurrency?: string;
   destinationCurrency: string;
@@ -108,12 +104,8 @@ async function executeSwap(
     console.log(`- Rate: ${details.rate}`);
 
     // Check if we have steps in the quote
-    if (
-      !quote.steps ||
-      !Array.isArray(quote.steps) ||
-      quote.steps.length === 0
-    ) {
-      throw new Error("No steps found in quote");
+    if (!quote.steps || !Array.isArray(quote.steps) || quote.steps.length === 0) {
+      throw new Error('No steps found in quote');
     }
 
     // Get the first step from the quote
@@ -122,13 +114,13 @@ async function executeSwap(
 
     // Check if we have items in the step
     if (!step.items || !Array.isArray(step.items) || step.items.length === 0) {
-      throw new Error("No items found in step");
+      throw new Error('No items found in step');
     }
 
     // Get the transaction data from the first item
     const txData = step.items[0].data;
     if (!txData) {
-      throw new Error("No transaction data found in step item");
+      throw new Error('No transaction data found in step item');
     }
 
     console.log(`\n🔄 Sending transaction to execute swap...`);
@@ -145,9 +137,7 @@ async function executeSwap(
     } = {
       to: txData.to,
       data: txData.data,
-      value: txData.value
-        ? ethers.parseUnits(txData.value, 0)
-        : ethers.parseEther("0"),
+      value: txData.value ? ethers.parseUnits(txData.value, 0) : ethers.parseEther('0'),
       chainId: txData.chainId,
     };
 
@@ -164,9 +154,7 @@ async function executeSwap(
 
     // Check wallet balance
     const balance = await wallet.provider?.getBalance(wallet.address);
-    console.log(
-      `Wallet balance: ${balance ? ethers.formatEther(balance) : "0"} ETH`
-    );
+    console.log(`Wallet balance: ${balance ? ethers.formatEther(balance) : '0'} ETH`);
     console.log(`Transaction value: ${ethers.formatEther(tx.value)} ETH`);
 
     // Convert to BigNumber objects for comparison
@@ -195,9 +183,7 @@ async function executeSwap(
     // Wait for transaction to be mined
     console.log(`Waiting for transaction confirmation...`);
     const receipt = await txResponse.wait();
-    console.log(
-      `Transaction confirmed in block ${receipt?.blockNumber ?? "unknown"}`
-    );
+    console.log(`Transaction confirmed in block ${receipt?.blockNumber ?? 'unknown'}`);
 
     // Get the request ID from the step or generate one if not available
     const requestId = step.requestId || `relay-${Date.now()}`;
@@ -216,26 +202,22 @@ async function executeSwap(
   }
 }
 
-async function checkSwapStatus(
-  requestId: string
-): Promise<IRelaySwapStatusResponse> {
+async function checkSwapStatus(requestId: string): Promise<IRelaySwapStatusResponse> {
   try {
     console.log(`🔍 Checking status for request ID: ${requestId}...`);
 
     // Check if this is a mock request ID (starts with 'relay-')
-    if (requestId.startsWith("relay-")) {
+    if (requestId.startsWith('relay-')) {
       console.log(`This is a local request ID, no status check needed`);
       return {
-        status: "success",
-        message: "Local swap completed successfully",
+        status: 'success',
+        message: 'Local swap completed successfully',
         timestamp: new Date().toISOString(),
       };
     }
 
     // Call the Relay API to check the status for real request IDs
-    const response = await axios.get(
-      `${RELAY_API_URL}/intents/status/v2?requestId=${requestId}`
-    );
+    const response = await axios.get(`${RELAY_API_URL}/intents/status/v2?requestId=${requestId}`);
 
     // Log the status
     console.log(`Status: ${response.data.status}`);
@@ -254,13 +236,11 @@ export async function buyTokenWithRelayRouter(
 ): Promise<ISwapResult | null> {
   try {
     if (!config.WALLET_PRIVATE_KEY) {
-      console.error("❌ No wallet private key provided for relay swap");
-      throw new Error("No wallet private key provided");
+      console.error('❌ No wallet private key provided for relay swap');
+      throw new Error('No wallet private key provided');
     }
 
-    console.log(
-      `🔄 Attempting to buy ${tokenAddress} with ${ethAmount} ETH via Relay router...`
-    );
+    console.log(`🔄 Attempting to buy ${tokenAddress} with ${ethAmount} ETH via Relay router...`);
 
     // Convert ETH amount to wei
     const amountInWei = ethers.parseEther(ethAmount.toString()).toString();
@@ -273,7 +253,7 @@ export async function buyTokenWithRelayRouter(
       originCurrency: config.ETH_ADDRESS,
       destinationCurrency: tokenAddress,
       amount: amountInWei,
-      tradeType: "EXACT_INPUT",
+      tradeType: 'EXACT_INPUT',
       slippageTolerance,
     });
 
@@ -288,7 +268,7 @@ export async function buyTokenWithRelayRouter(
       tokenInfo,
     };
   } catch (error: any) {
-    console.error("❌ Error executing relay swap:", error);
+    console.error('❌ Error executing relay swap:', error);
     return null;
   }
 }
@@ -300,8 +280,8 @@ export async function sellTokenWithRelayRouter(
 ): Promise<ISwapResult | null> {
   try {
     if (!config.WALLET_PRIVATE_KEY) {
-      console.error("❌ No wallet private key provided for relay swap");
-      throw new Error("No wallet private key provided");
+      console.error('❌ No wallet private key provided for relay swap');
+      throw new Error('No wallet private key provided');
     }
 
     console.log(
@@ -313,7 +293,7 @@ export async function sellTokenWithRelayRouter(
 
     // If tokenAmount is 'max', get the wallet's token balance
     let amount;
-    if (tokenAmount.toLowerCase() === "max") {
+    if (tokenAmount.toLowerCase() === 'max') {
       amount = tokenInfo.balance.toString();
       console.log(
         `Using max token balance: ${ethers.formatUnits(
@@ -328,7 +308,7 @@ export async function sellTokenWithRelayRouter(
     // Create ERC20 token contract instance for approval
     const tokenContract = new ethers.Contract(
       tokenAddress,
-      ["function approve(address spender, uint256 amount) returns (bool)"],
+      ['function approve(address spender, uint256 amount) returns (bool)'],
       wallet
     );
 
@@ -339,7 +319,7 @@ export async function sellTokenWithRelayRouter(
       originCurrency: tokenAddress,
       destinationCurrency: config.ETH_ADDRESS,
       amount,
-      tradeType: "EXACT_INPUT",
+      tradeType: 'EXACT_INPUT',
       slippageTolerance,
     });
 
@@ -360,7 +340,7 @@ export async function sellTokenWithRelayRouter(
         originCurrency: tokenAddress,
         destinationCurrency: config.ETH_ADDRESS,
         amount,
-        tradeType: "EXACT_INPUT",
+        tradeType: 'EXACT_INPUT',
         slippageTolerance,
       });
 
@@ -375,7 +355,7 @@ export async function sellTokenWithRelayRouter(
       tokenInfo: updatedTokenInfo,
     };
   } catch (error: any) {
-    console.error("❌ Error executing relay swap:", error);
+    console.error('❌ Error executing relay swap:', error);
     return null;
   }
 }

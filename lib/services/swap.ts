@@ -1,40 +1,32 @@
-import { ethers } from "ethers";
-import { config } from "../utils/config";
-import { BaseProviders } from "../blockchain/providers";
-import { BaseContracts } from "../contracts/contracts";
-import { ISwapResult } from "../interface/types";
-import { checkUserTokenInfo } from "./info";
+import { ethers } from 'ethers';
+import { config } from '../utils/config';
+import { BaseProviders } from '../blockchain/providers';
+import { BaseContracts } from '../contracts/contracts';
+import { ISwapResult } from '../interface/types';
+import { checkUserTokenInfo } from './info';
 
 // Complete Router ABI with swap functions
 const routerAbi = [
   // Buy functions (ETH -> Token)
-  "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)",
-  "function swapExactETHForTokensSupportingFeeOnTransferTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable",
+  'function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)',
+  'function swapExactETHForTokensSupportingFeeOnTransferTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable',
   // Sell functions (Token -> ETH)
-  "function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)",
-  "function swapExactTokensForETHSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external",
+  'function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)',
+  'function swapExactTokensForETHSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external',
   // Utility functions
-  "function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)",
-  "function factory() external pure returns (address)",
+  'function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)',
+  'function factory() external pure returns (address)',
 ];
 
 const factoryABI = [
-  "function getPair(address tokenA, address tokenB) external view returns (address pair)",
+  'function getPair(address tokenA, address tokenB) external view returns (address pair)',
 ];
 
 // Create wallet instance
 const wallet = new ethers.Wallet(config.WALLET_PRIVATE_KEY!, BaseProviders.baseProvider);
 
-const aerodromeRouter = new ethers.Contract(
-  config.AERODROME_ROUTER,
-  routerAbi,
-  wallet
-);
-const uniswapRouter = new ethers.Contract(
-  config.UNISWAP_V2_ROUTER,
-  routerAbi,
-  wallet
-);
+const aerodromeRouter = new ethers.Contract(config.AERODROME_ROUTER, routerAbi, wallet);
+const uniswapRouter = new ethers.Contract(config.UNISWAP_V2_ROUTER, routerAbi, wallet);
 
 const swapRouters = [aerodromeRouter, uniswapRouter];
 
@@ -44,14 +36,14 @@ export async function buyTokenWithETH(
 ): Promise<ISwapResult | null> {
   try {
     if (!config.WALLET_PRIVATE_KEY) {
-      console.error("❌ No wallet private key provided for auto swap");
-      throw new Error("No wallet private key provided");
+      console.error('❌ No wallet private key provided for auto swap');
+      throw new Error('No wallet private key provided');
     }
 
     const amountIn = ethers.parseEther(ethAmount.toString());
 
     // Check if multi-hop routing would be beneficial
-    console.log("🔍 Analyzing routing options...");
+    console.log('🔍 Analyzing routing options...');
 
     // path for the swap (ETH -> Token)
     const path = [config.WETH_ADDRESS, tokenAddress];
@@ -69,31 +61,18 @@ export async function buyTokenWithETH(
         const factoryAddress = await router.factory();
         console.log(`${routerName} Factory address: ${factoryAddress}`);
 
-        const factory = new ethers.Contract(
-          factoryAddress,
-          factoryABI,
-          BaseProviders.baseProvider
-        );
+        const factory = new ethers.Contract(factoryAddress, factoryABI, BaseProviders.baseProvider);
 
-        const pairAddress = await factory.getPair(
-          config.WETH_ADDRESS,
-          tokenAddress
-        );
+        const pairAddress = await factory.getPair(config.WETH_ADDRESS, tokenAddress);
 
         if (pairAddress === ethers.ZeroAddress) {
-          console.log(
-            `❌ No liquidity pool exists for WETH and this token on ${routerName}`
-          );
+          console.log(`❌ No liquidity pool exists for WETH and this token on ${routerName}`);
           continue;
         }
 
-        console.log(
-          `✅ Found liquidity pool at ${pairAddress} on ${routerName}`
-        );
+        console.log(`✅ Found liquidity pool at ${pairAddress} on ${routerName}`);
       } catch (error) {
-        console.error(
-          `Error checking liquidity pool on ${routerName}: ${error}`
-        );
+        console.error(`Error checking liquidity pool on ${routerName}: ${error}`);
       }
 
       try {
@@ -116,9 +95,7 @@ export async function buyTokenWithETH(
         }
 
         const amountOutMin = (amounts[1] * 95n) / 100n;
-        console.log(
-          `Minimum output: ${ethers.formatUnits(amountOutMin, 18)} tokens`
-        );
+        console.log(`Minimum output: ${ethers.formatUnits(amountOutMin, 18)} tokens`);
 
         const tokenInfo = await checkUserTokenInfo(tokenAddress);
         console.log(`Swapping on ${routerName}...`);
@@ -133,13 +110,9 @@ export async function buyTokenWithETH(
             { value: amountIn, gasLimit: 300000 }
           );
 
-          console.log(
-            `Transaction sent on ${routerName}, waiting for confirmation...`
-          );
+          console.log(`Transaction sent on ${routerName}, waiting for confirmation...`);
           const receipt = await tx.wait();
-          console.log(
-            `✅ Swap complete on ${routerName}! Hash: ${receipt.hash}`
-          );
+          console.log(`✅ Swap complete on ${routerName}! Hash: ${receipt.hash}`);
           tokenInfo.balance = amounts[1].toString();
           txResult = {
             txHash: receipt.hash,
@@ -153,22 +126,19 @@ export async function buyTokenWithETH(
 
           try {
             // If regular swap fails, try with fee on transfer support
-            const tx =
-              await router.swapExactETHForTokensSupportingFeeOnTransferTokens(
-                0n, // Set to 0 for tokens with fees
-                path,
-                wallet.address,
-                Math.floor(Date.now() / 1000) + 60 * 10,
-                { value: amountIn, gasLimit: 500000 }
-              );
+            const tx = await router.swapExactETHForTokensSupportingFeeOnTransferTokens(
+              0n, // Set to 0 for tokens with fees
+              path,
+              wallet.address,
+              Math.floor(Date.now() / 1000) + 60 * 10,
+              { value: amountIn, gasLimit: 500000 }
+            );
 
             console.log(
               `Fee-supporting transaction sent on ${routerName}, waiting for confirmation...`
             );
             const receipt = await tx.wait();
-            console.log(
-              `✅ Fee-supporting swap complete on ${routerName}! Hash: ${receipt.hash}`
-            );
+            console.log(`✅ Fee-supporting swap complete on ${routerName}! Hash: ${receipt.hash}`);
             tokenInfo.balance = amounts[1].toString();
             txResult = {
               txHash: receipt.hash,
@@ -176,9 +146,7 @@ export async function buyTokenWithETH(
             };
             break; // Exit the loop if successful
           } catch (feeError) {
-            console.error(
-              `❌ Fee-supporting swap also failed on ${routerName}: ${feeError}`
-            );
+            console.error(`❌ Fee-supporting swap also failed on ${routerName}: ${feeError}`);
           }
         }
       } catch (error) {
@@ -188,7 +156,7 @@ export async function buyTokenWithETH(
 
     return txResult;
   } catch (error) {
-    console.error("❌ Error executing swap:", error);
+    console.error('❌ Error executing swap:', error);
     throw error;
   }
 }
@@ -200,14 +168,14 @@ export async function sellTokenForETH(
 ): Promise<ISwapResult | null> {
   try {
     if (!config.WALLET_PRIVATE_KEY) {
-      console.error("❌ No wallet private key provided for swap");
-      throw new Error("No wallet private key provided");
+      console.error('❌ No wallet private key provided for swap');
+      throw new Error('No wallet private key provided');
     }
 
     // Create ERC20 token contract instance
     const tokenContract = new ethers.Contract(
       tokenAddress,
-      ["function approve(address spender, uint256 amount) returns (bool)"],
+      ['function approve(address spender, uint256 amount) returns (bool)'],
       wallet
     );
 
@@ -216,7 +184,7 @@ export async function sellTokenForETH(
 
     // If tokenAmount is 'max', get the wallet's token balance
     let amount;
-    if (tokenAmount.toLowerCase() === "max") {
+    if (tokenAmount.toLowerCase() === 'max') {
       amount = tokenInfo.balance;
     } else {
       amount = ethers.parseUnits(tokenAmount, tokenInfo.decimals);
@@ -239,31 +207,18 @@ export async function sellTokenForETH(
         const factoryAddress = await router.factory();
         console.log(`${routerName} Factory address: ${factoryAddress}`);
 
-        const factory = new ethers.Contract(
-          factoryAddress,
-          factoryABI,
-          BaseProviders.baseProvider
-        );
+        const factory = new ethers.Contract(factoryAddress, factoryABI, BaseProviders.baseProvider);
 
-        const pairAddress = await factory.getPair(
-          tokenAddress,
-          config.WETH_ADDRESS
-        );
+        const pairAddress = await factory.getPair(tokenAddress, config.WETH_ADDRESS);
 
         if (pairAddress === ethers.ZeroAddress) {
-          console.log(
-            `❌ No liquidity pool exists for this token and WETH on ${routerName}`
-          );
+          console.log(`❌ No liquidity pool exists for this token and WETH on ${routerName}`);
           continue;
         }
 
-        console.log(
-          `✅ Found liquidity pool at ${pairAddress} on ${routerName}`
-        );
+        console.log(`✅ Found liquidity pool at ${pairAddress} on ${routerName}`);
       } catch (error) {
-        console.error(
-          `Error checking liquidity pool on ${routerName}: ${error}`
-        );
+        console.error(`Error checking liquidity pool on ${routerName}: ${error}`);
         continue;
       }
 
@@ -281,14 +236,11 @@ export async function sellTokenForETH(
             )} ETH`
           );
         } catch (error) {
-          console.log(
-            `❌ No liquidity found on ${routerName}. Error: ${error}`
-          );
+          console.log(`❌ No liquidity found on ${routerName}. Error: ${error}`);
           continue;
         }
 
-        const amountOutMin =
-          (amounts[1] * BigInt(100 - slippagePercent)) / 100n;
+        const amountOutMin = (amounts[1] * BigInt(100 - slippagePercent)) / 100n;
         console.log(`Minimum output: ${ethers.formatEther(amountOutMin)} ETH`);
 
         // Approve router to spend tokens
@@ -311,13 +263,9 @@ export async function sellTokenForETH(
             { gasLimit: 300000 }
           );
 
-          console.log(
-            `Transaction sent on ${routerName}, waiting for confirmation...`
-          );
+          console.log(`Transaction sent on ${routerName}, waiting for confirmation...`);
           const receipt = await tx.wait();
-          console.log(
-            `✅ Swap complete on ${routerName}! Hash: ${receipt.hash}`
-          );
+          console.log(`✅ Swap complete on ${routerName}! Hash: ${receipt.hash}`);
 
           txResult = {
             txHash: receipt.hash,
@@ -342,23 +290,20 @@ export async function sellTokenForETH(
 
           try {
             // If regular swap fails, try with fee on transfer support
-            const tx =
-              await router.swapExactTokensForETHSupportingFeeOnTransferTokens(
-                amount,
-                0n, // Set to 0 for tokens with fees
-                path,
-                wallet.address,
-                deadline,
-                { gasLimit: 500000 }
-              );
+            const tx = await router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+              amount,
+              0n, // Set to 0 for tokens with fees
+              path,
+              wallet.address,
+              deadline,
+              { gasLimit: 500000 }
+            );
 
             console.log(
               `Fee-supporting transaction sent on ${routerName}, waiting for confirmation...`
             );
             const receipt = await tx.wait();
-            console.log(
-              `✅ Fee-supporting swap complete on ${routerName}! Hash: ${receipt.hash}`
-            );
+            console.log(`✅ Fee-supporting swap complete on ${routerName}! Hash: ${receipt.hash}`);
 
             txResult = {
               txHash: receipt.hash,
@@ -377,9 +322,7 @@ export async function sellTokenForETH(
 
             break; // Exit the loop if successful
           } catch (feeError) {
-            console.error(
-              `❌ Fee-supporting swap also failed on ${routerName}: ${feeError}`
-            );
+            console.error(`❌ Fee-supporting swap also failed on ${routerName}: ${feeError}`);
             // Continue to next router
           }
         }
@@ -390,7 +333,7 @@ export async function sellTokenForETH(
 
     return txResult;
   } catch (error) {
-    console.error("❌ Error executing swap:", error);
+    console.error('❌ Error executing swap:', error);
     throw error;
   }
 }

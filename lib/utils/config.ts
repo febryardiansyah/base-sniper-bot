@@ -1,4 +1,4 @@
-import * as dotenv from "dotenv";
+import * as dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -38,9 +38,9 @@ export const config: Config = {
   BASE_MAINET_RPC_URL: process.env.BASE_MAINET_RPC_URL!,
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN!,
   TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID!,
-  BIG_BUY_THRESHOLD: parseFloat("1.0"),
-  MIN_LIQUIDITY_ETH: parseFloat("10"),
-  MAX_SUPPLY_THRESHOLD: parseFloat("1000000000"),
+  BIG_BUY_THRESHOLD: parseFloat('1.0'),
+  MIN_LIQUIDITY_ETH: parseFloat('10'),
+  MAX_SUPPLY_THRESHOLD: parseFloat('1000000000'),
   WETH_ADDRESS: '0x4200000000000000000000000000000000000006',
   UNISWAP_V2_FACTORY: process.env.UNISWAP_V2_FACTORY!,
   UNISWAP_V2_ROUTER: process.env.UNISWAP_V2_ROUTER!,
@@ -48,9 +48,9 @@ export const config: Config = {
   UNISWAP_V4_POOL_MANAGER: process.env.UNISWAP_V4_POOL_MANAGER!,
   AERODROME_FACTORY: process.env.AERODROME_FACTORY!,
   AERODROME_ROUTER: process.env.AERODROME_ROUTER!,
-  BLOCK_CONFIRMATION_COUNT: parseInt("3"),
-  RETRY_ATTEMPTS: parseInt("3"),
-  RETRY_DELAY_MS: parseInt("1000"),
+  BLOCK_CONFIRMATION_COUNT: parseInt('3'),
+  RETRY_ATTEMPTS: parseInt('3'),
+  RETRY_DELAY_MS: parseInt('1000'),
   WALLET_PRIVATE_KEY: process.env.WALLET_PRIVATE_KEY,
   ETH_ADDRESS: '0x0000000000000000000000000000000000000000',
   ZORA_FACTORY: process.env.ZORA_FACTORY!,

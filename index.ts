@@ -1,7 +1,7 @@
-import { App } from "./lib/app";
+import { App } from './lib/app';
 
 // Error handling
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   console.error('Uncaught Exception:', error);
 });
 
@@ -11,7 +11,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Graceful shutdown
 process.on('SIGINT', () => {
-  console.log('\n🛑 Shutting down Febry\'s Defi Bot...');
+  console.log("\n🛑 Shutting down Febry's Defi Bot...");
   process.exit(0);
 });
 
