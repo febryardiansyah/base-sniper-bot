@@ -3,7 +3,7 @@ import { config } from '../utils/config';
 import { checkAddressInfo } from '../services/info';
 import { commandList } from '../utils/utils';
 import * as MonitoringTelegram from './monitoringTelegram';
-import * as SwapTelegram from './swapTelegram';
+import * as TokenTelegram from './tokenTelegram';
 
 export { MonitoringTelegram };
 
@@ -53,7 +53,7 @@ export function setupCommandHandlers(): void {
   });
 
   MonitoringTelegram.commandHandlers();
-  SwapTelegram.commandHandlers();
+  TokenTelegram.commandHandlers();
 
   // check address info
   telegramBot.onText(/\/myinfo/, async msg => {

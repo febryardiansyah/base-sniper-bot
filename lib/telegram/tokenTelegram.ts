@@ -300,4 +300,41 @@ export function commandHandlers(): void {
       parse_mode: 'Markdown',
     });
   });
+
+  telegramBot.onText(/\/setchain (.+)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+
+    // Check if the chat ID matches the configured chat ID
+    if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
+      await telegramBot.sendMessage(chatId, '⛔ Unauthorized access');
+      return;
+    }
+
+    const chainName = (match ?? '')[1].trim();
+    const supportedChains = stateService.getConfig().chains || [];
+
+    if (!supportedChains.map(chain => chain.toLowerCase()).includes(chainName.toLowerCase())) {
+      await telegramBot.sendMessage(
+        chatId,
+        `❌ Invalid chain name. Supported chains are: *${supportedChains.join(', ')}*`,
+        { parse_mode: 'Markdown' }
+      );
+      return;
+    }
+
+    try {
+      const currentChain = supportedChains.find(
+        chain => chain.toLowerCase() === chainName.toLowerCase()
+      );
+      stateService.update({
+        current_chain: currentChain,
+      });
+      await telegramBot.sendMessage(chatId, `✅ Chain changed to *${currentChain}*`, {
+        parse_mode: 'Markdown',
+      });
+    } catch (error) {
+      console.error('Error changing chain:', error);
+      await telegramBot.sendMessage(chatId, `❌ Failed to change chain: ${error}`);
+    }
+  });
 }

@@ -9,7 +9,7 @@ export class StateService {
   private config: IState;
 
   constructor(options: IStateServiceOptions = {}) {
-    this.configPath = options.configPath || path.resolve(process.cwd(), 'config.json');
+    this.configPath = options.configPath || path.resolve(process.cwd(), 'state.json');
     this.autoSave = options.autoSave ?? true;
     this.encoding = options.encoding || 'utf8';
     this.config = this.loadConfig();
@@ -57,14 +57,6 @@ export class StateService {
     if (save ?? this.autoSave) {
       this.save();
     }
-  }
-
-  public getCurrentChain(): string {
-    return this.config.current_chain || 'base';
-  }
-
-  public setCurrentChain(chain: string, save?: boolean): void {
-    this.set('current_chain', chain, save);
   }
 
   public has(key: string): boolean {
