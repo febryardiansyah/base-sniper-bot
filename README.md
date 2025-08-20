@@ -1,4 +1,4 @@
-# Base Chain Sniper Bot 🎯
+# Febry's Defi Bot 🎯
 
 A powerful TypeScript bot that monitors the Base blockchain for new token launches with high liquidity and sends real-time alerts to Telegram. Perfect for identifying early investment opportunities and tracking large transactions.
 
@@ -9,8 +9,12 @@ A powerful TypeScript bot that monitors the Base blockchain for new token launch
 - **Big Buy Alerts**: Tracks large purchases across multiple DEX routers
 - **Telegram Integration**: Sends formatted alerts with token details and transaction information
 - **Multi-DEX Support**: Monitors both Uniswap V2 and Aerodrome on Base Chain
+- **Universal Router Integration**: 🆕 Support for Uniswap's Universal Router (V2, V3, V4 unified)
+- **Smart Fallback System**: Automatically falls back to legacy routers if Universal Router fails
 - **Smart Filtering**: Avoids spam tokens with configurable supply thresholds
 - **Real-time Monitoring**: WebSocket connection for instant notifications
+- **Auto Swap**: Automatically buys tokens when new high-liquidity pairs are detected (optional)
+- **Telegram Commands**: Interactive command interface for manual token swaps
 
 ## Prerequisites 📋
 
@@ -25,7 +29,7 @@ A powerful TypeScript bot that monitors the Base blockchain for new token launch
 1. **Clone the repository**:
    ```bash
    git clone <your-repo-url>
-   cd base-snipe-bot
+   cd febrys-defi-bot
    ```
 
 2. **Install dependencies**:
@@ -58,6 +62,15 @@ TELEGRAM_CHAT_ID=YOUR_TELEGRAM_CHAT_ID
 BIG_BUY_THRESHOLD=1.0  # Minimum ETH amount to trigger big buy alert
 MIN_LIQUIDITY_ETH=5.0  # Minimum liquidity in ETH to trigger new token alert
 MAX_SUPPLY_THRESHOLD=1000000000  # Maximum token supply to consider
+
+# Universal Router (Recommended for new integrations)
+UNIVERSAL_ROUTER=0x6ff5693b99212da76ad316178a184ab56d299b43
+PERMIT2_ADDRESS=0x000000000022D473030F116dDEE9F6B43aC78BA3
+USE_UNIVERSAL_ROUTER=true  # Enable Universal Router for better liquidity access
+
+# Wallet Configuration
+WALLET_PRIVATE_KEY=YOUR_WALLET_PRIVATE_KEY  # Required for manual swaps
+
 ```
 
 ### Getting Required Credentials
@@ -75,9 +88,14 @@ MAX_SUPPLY_THRESHOLD=1000000000  # Maximum token supply to consider
 
 ## Usage 🚀
 
-### Development Mode
+### Development Mode (with nodemon auto-restart)
 ```bash
 npm run dev
+```
+
+### Development Mode (without auto-restart)
+```bash
+npm run dev:ts
 ```
 
 ### Production Mode
@@ -93,7 +111,7 @@ npm run build
 
 ## How It Works 🔍
 
-The bot operates in two main monitoring modes:
+The bot operates in three main monitoring modes:
 
 ### 1. New Token Detection
 - Listens to `PairCreated` events from Uniswap V2 and Aerodrome factories
@@ -105,6 +123,19 @@ The bot operates in two main monitoring modes:
 - Monitors `Swap` events on DEX routers
 - Tracks purchases made with ETH above the threshold
 - Provides transaction details and token information
+
+### 3. Auto Swap (Optional)
+- Automatically buys tokens when new high-liquidity pairs are detected
+- Configurable ETH amount per trade
+- Customizable slippage tolerance
+- Supports both Uniswap V2 and Aerodrome routers
+- Sends notifications for executed trades
+
+### 4. Telegram Commands
+- Interactive command interface via Telegram
+- Manual token swaps with customizable parameters
+- Help command for usage instructions
+- Secure access control via chat ID verification
 
 ## Alert Types 📱
 
@@ -136,20 +167,75 @@ The bot operates in two main monitoring modes:
 💡 Someone just made a big purchase!
 ```
 
+### Swap Alert
+```
+🤖 SWAP BOUGHT
+
+💰 Amount: 0.1000 ETH
+🪙 Token Address: 0x...
+🏪 Router: Uniswap V2
+👛 Wallet: 0x...
+🔗 TX: 0x...
+
+✅ Swap executed successfully!
+```
+
 ## Monitored Contracts 📋
 
 ### Factories (New Pair Detection)
 - **Uniswap V2 Factory**: `0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6`
 - **Aerodrome Factory**: `0x420DD381b31aEf6683db96b3aaC7FF414b03B0b`
 
-### Routers (Swap Monitoring)
+### Routers (Swap Execution)
+- **Universal Router** 🆕: `0x6ff5693b99212da76ad316178a184ab56d299b43` (Recommended)
 - **Uniswap V2 Router**: `0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24`
 - **Aerodrome Router**: `0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43`
 
 ### Key Addresses
 - **WETH (Base)**: `0x4200000000000000000000000000000000000006`
+- **Permit2**: `0x000000000022D473030F116dDEE9F6B43aC78BA3`
+
+## Universal Router Migration 🔄
+
+This project now supports **Uniswap's Universal Router**, which is the recommended entry point for all ERC20 swaps. The Universal Router provides:
+
+- **Unified Access**: Supports Uniswap V2, V3, and V4 in a single contract
+- **Better Liquidity**: Access to more liquidity sources
+- **Gas Efficiency**: Optimized for lower gas costs
+- **Future-Proof**: Official Uniswap recommendation
+
+### Migration Guide
+
+1. **Enable Universal Router**:
+   ```env
+   USE_UNIVERSAL_ROUTER=true
+   ```
+
+2. **Fallback Strategy**: The bot automatically falls back to legacy routers if Universal Router fails
+
+3. **Test First**: Start with small amounts to verify functionality
+
+For detailed migration information, see [UNIVERSAL_ROUTER_MIGRATION.md](./UNIVERSAL_ROUTER_MIGRATION.md).
+
+### Testing Universal Router
+
+Run the test script to verify Universal Router integration:
+```bash
+node test-universal-router.js
+```
 
 ## Customization 🎛️
+
+### Telegram Commands
+
+The bot supports the following Telegram commands:
+
+- `/swap <token_address> <eth_amount> [router_index] [slippage]` - Buy tokens with ETH
+  - Example: `/swap 0x1234...abcd 0.1 0 5`
+  - `router_index`: 0 for Uniswap V2, 1 for Aerodrome (default: 0)
+  - `slippage`: Percentage tolerance (default: 5%)
+
+- `/help` - Display available commands and usage information
 
 ### Adjusting Filters
 
@@ -159,6 +245,14 @@ Modify these values in your `.env` file:
 - `MIN_LIQUIDITY_ETH`: Minimum liquidity required for new token alerts
 - `MAX_SUPPLY_THRESHOLD`: Maximum token supply to avoid spam tokens
 - `BLOCK_CONFIRMATION_COUNT`: Number of blocks to wait before processing
+
+### Swap Configuration
+
+Configure swap behavior with these settings:
+
+- `WALLET_PRIVATE_KEY`: Your wallet's private key (required for manual swaps via Telegram commands)
+
+> Note: Manual swaps via Telegram commands allow you to specify custom parameters for each transaction.
 
 ### Adding More DEXs
 

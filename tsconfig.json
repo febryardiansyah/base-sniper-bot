@@ -14,8 +14,8 @@
     "rootDir": "./"
   },
   "include": [
-    "index.ts",
-    "abi/**/*"
+    "**/*.ts",
+    "**/*.tsx"
   ],
   "exclude": [
     "node_modules",

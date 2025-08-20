@@ -1,0 +1,39 @@
+[
+  {
+    "type": "event",
+    "name": "PoolCreated",
+    "inputs": [
+      {
+        "name": "token0",
+        "type": "address",
+        "internalType": "address",
+        "indexed": true
+      },
+      {
+        "name": "token1",
+        "type": "address",
+        "internalType": "address",
+        "indexed": true
+      },
+      {
+        "name": "fee",
+        "type": "uint24",
+        "internalType": "uint24",
+        "indexed": false
+      },
+      {
+        "name": "tickSpacing",
+        "type": "int24",
+        "internalType": "int24",
+        "indexed": false
+      },
+      {
+        "name": "pool",
+        "type": "address",
+        "internalType": "address",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  }
+]

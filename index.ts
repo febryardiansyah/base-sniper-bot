@@ -1,7 +1,7 @@
-import { BaseChainSniperBot } from "./lib/BaseChainSniperBot";
+import { App } from './lib/app';
 
 // Error handling
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   console.error('Uncaught Exception:', error);
 });
 
@@ -11,12 +11,12 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Graceful shutdown
 process.on('SIGINT', () => {
-  console.log('\n🛑 Shutting down Base Chain Sniper Bot...');
+  console.log("\n🛑 Shutting down Febry's Defi Bot...");
   process.exit(0);
 });
 
 // Start the bot
-const bot = new BaseChainSniperBot();
+const bot = new App();
 bot.start().catch(console.error);
 
-console.log("🎯 Base Chain Sniper Bot initialized and ready to hunt!");
+console.log("🎯 Febry's Defi Bot initialized and ready to hunt!");

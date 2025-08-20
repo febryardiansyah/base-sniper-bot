@@ -1,0 +1,20 @@
+{
+    "watch": [
+        "index.ts",
+        "lib/",
+        "config.json"
+    ],
+    "ext": "ts,js,json",
+    "ignore": [
+        "node_modules/",
+        "dist/",
+        "*.test.ts",
+        "*.spec.ts"
+    ],
+    "exec": "ts-node index.ts",
+    "env": {
+        "NODE_ENV": "development"
+    },
+    "delay": 1000,
+    "verbose": true
+}
