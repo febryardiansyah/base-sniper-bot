@@ -3,5 +3,31 @@
     "chains": [
         "Base",
         "Solana"
+    ],
+    "tokenBlacklist": [
+        "BabyBlaze",
+        "BIGBALZ",
+        "ETF",
+        "ZORA",
+        "KaitoAI",
+        "WALLY",
+        "TRUMP2028",
+        "LABUBU",
+        "MR BEAST",
+        "ZORB",
+        "pigwif",
+        "CVISION",
+        "PIKACHU",
+        "KAI",
+        "HODL",
+        "TREE",
+        "America Party",
+        "SOON",
+        "VINE",
+        "ALPACA",
+        "BALL",
+        "noice",
+        "Monkey D. Luffy",
+        "ZALA AI"
     ]
 }

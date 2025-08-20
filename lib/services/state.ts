@@ -20,7 +20,8 @@ export class StateService {
   private loadConfig(): IState {
     try {
       const configData = fs.readFileSync(this.configPath, this.encoding);
-      return JSON.parse(configData) as IState;
+      const config = JSON.parse(configData) as IState;
+      return config;
     } catch (error) {
       console.error('Error loading config:', error);
       throw new Error(`Failed to load configuration: ${error}`);

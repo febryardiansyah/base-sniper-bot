@@ -2,6 +2,7 @@
 export interface IState {
   current_chain: string | 'Base' | 'Solana';
   chains: Array<string>;
+  tokenBlacklist?: Array<string>;
   [key: string]: unknown; // Allow for additional configuration fields
 }
 

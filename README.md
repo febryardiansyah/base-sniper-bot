@@ -12,6 +12,7 @@ A powerful TypeScript bot that monitors the Base blockchain for new token launch
 - **Universal Router Integration**: 🆕 Support for Uniswap's Universal Router (V2, V3, V4 unified)
 - **Smart Fallback System**: Automatically falls back to legacy routers if Universal Router fails
 - **Smart Filtering**: Avoids spam tokens with configurable supply thresholds
+- **Token Blacklist**: 🆕 Configurable blacklist to filter out unwanted tokens
 - **Real-time Monitoring**: WebSocket connection for instant notifications
 - **Auto Swap**: Automatically buys tokens when new high-liquidity pairs are detected (optional)
 - **Telegram Commands**: Interactive command interface for manual token swaps
@@ -107,6 +108,55 @@ npm start
 ### Build Only
 ```bash
 npm run build
+```
+
+## Token Blacklist System 🚫
+
+The bot includes a sophisticated token blacklist system to filter out unwanted tokens automatically:
+
+### Features
+- **Persistent Storage**: Blacklist is stored in state files and persists across restarts
+- **Dynamic Management**: Add/remove tokens via Telegram commands
+- **Case-Insensitive Matching**: Flexible matching options for token names
+- **Substring Detection**: Can detect tokens containing blacklisted terms
+- **Default Protection**: Comes pre-loaded with known scam/spam tokens
+
+### Default Blacklisted Tokens
+The bot comes with a curated list of commonly problematic tokens:
+- BabyBlaze, BIGBALZ, ETF, ZORA, KaitoAI, WALLY
+- TRUMP2028, LABUBU, MR BEAST, ZORB, pigwif
+- CVISION, PIKACHU, KAI, HODL, TREE
+- America Party, SOON, VINE, ALPACA, BALL, noice
+
+### Programmatic Usage
+```typescript
+import { BlacklistUtils } from './lib/utils/blacklistUtils';
+
+// Check if a token is blacklisted
+if (BlacklistUtils.isBlacklisted('SCAM_TOKEN')) {
+  console.log('Token is blacklisted, ignoring...');
+}
+
+// Get all blacklisted tokens
+const blacklist = BlacklistUtils.getBlacklist();
+
+// Add/remove tokens programmatically
+BlacklistUtils.addToBlacklist('NEW_SCAM_TOKEN');
+BlacklistUtils.removeFromBlacklist('LEGITIMATE_TOKEN');
+```
+
+### State Configuration
+The blacklist is stored in your state files (`state.json` / `state-dev.json`):
+```json
+{
+  "current_chain": "Base",
+  "chains": ["Base", "Solana"],
+  "tokenBlacklist": [
+    "BabyBlaze",
+    "BIGBALZ",
+    "ETF"
+  ]
+}
 ```
 
 ## How It Works 🔍
@@ -230,12 +280,36 @@ node test-universal-router.js
 
 The bot supports the following Telegram commands:
 
-- `/swap <token_address> <eth_amount> [router_index] [slippage]` - Buy tokens with ETH
-  - Example: `/swap 0x1234...abcd 0.1 0 5`
-  - `router_index`: 0 for Uniswap V2, 1 for Aerodrome (default: 0)
-  - `slippage`: Percentage tolerance (default: 5%)
-
 - `/help` - Display available commands and usage information
+
+- `/start` - Start monitoring for new tokens
+- `/stop` - Stop monitoring
+- `/status` - Show current monitoring status
+
+#### Trading Commands
+- `/buy <token_address> <eth_amount>` - Buy tokens with ETH
+  - Example: `/buy 0x1234...abcd 0.1`
+
+- `/sell <token_address> <token_amount>` or `/sell <token_address> max` - Sell tokens for ETH
+
+- `/tokenbalance <token_address>` - Get your balance for a specific token
+
+#### Utility Commands
+- `/myinfo` - Check your wallet address and balance info
+
+- `/chain` - Show current blockchain network
+- `/chainlist` - Show list of supported blockchain networks  
+- `/setchain <chain_name>` - Switch to a different blockchain network
+
+#### Token Blacklist Commands 🆕
+- `/blacklist` - Show all blacklisted tokens
+- `/addblacklist <token_name>` - Add a token to the blacklist
+  - Example: `/addblacklist SCAM_TOKEN`
+
+- `/removeblacklist <token_name>` - Remove a token from the blacklist
+  - Example: `/removeblacklist EXAMPLE`
+
+- `/resetblacklist` - Reset blacklist to default tokens
 
 ### Adjusting Filters
 

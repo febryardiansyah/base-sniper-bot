@@ -53,6 +53,22 @@ export const commandList: ICommand[] = [
     command: '/setchain <chain_name>',
     description: 'Switch to a different blockchain network',
   },
+  {
+    command: '/blacklist',
+    description: 'Show all blacklisted tokens',
+  },
+  {
+    command: '/addblacklist <token_name>',
+    description: 'Add a token to the blacklist',
+  },
+  {
+    command: '/removeblacklist <token_name>',
+    description: 'Remove a token from the blacklist',
+  },
+  {
+    command: '/resetblacklist',
+    description: 'Reset blacklist to default tokens',
+  },
 ];
 
 export function getTimeAgo(timestamp: number): string {
