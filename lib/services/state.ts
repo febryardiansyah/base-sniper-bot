@@ -9,7 +9,9 @@ export class StateService {
   private config: IState;
 
   constructor(options: IStateServiceOptions = {}) {
-    this.configPath = options.configPath || path.resolve(process.cwd(), 'state.json');
+    const isProduction = process.env.NODE_ENV === 'production';
+    const defaultConfigFile = isProduction ? 'state.json' : 'state-dev.json';
+    this.configPath = options.configPath || path.resolve(process.cwd(), defaultConfigFile);
     this.autoSave = options.autoSave ?? true;
     this.encoding = options.encoding || 'utf8';
     this.config = this.loadConfig();
