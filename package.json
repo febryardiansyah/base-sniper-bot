@@ -25,9 +25,14 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@coral-xyz/anchor": "^0.31.1",
+    "@metaplex-foundation/mpl-token-metadata": "^3.4.0",
+    "@solana/spl-token": "^0.4.13",
+    "@solana/web3.js": "^1.98.4",
     "axios": "^1.8.4",
     "bignumber.js": "^9.1.2",
-    "dotenv": "^16.5.0",
+    "bs58": "^6.0.0",
+    "dotenv": "^16.6.1",
     "ethers": "^6.13.5",
     "node-telegram-bot-api": "^0.66.0",
     "ts-node": "^10.9.2"
