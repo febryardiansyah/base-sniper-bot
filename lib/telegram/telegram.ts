@@ -1,6 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
-import { config } from '../utils/config';
 import { checkAddressInfo } from '../services/info';
+import { config } from '../utils/config';
 import { commandList } from '../utils/utils';
 import * as MonitoringTelegram from './monitoringTelegram';
 import * as TokenTelegram from './tokenTelegram';

@@ -1,3 +1,4 @@
+import BigNumber from 'bignumber.js';
 import { BaseMonitoring } from '../blockchain/monitoring/monitoring';
 import { getNonWETHToken } from '../blockchain/pairAnalyzer';
 import { BigBuyData, PairInfo } from '../interface/types';

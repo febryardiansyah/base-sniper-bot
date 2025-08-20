@@ -37,6 +37,22 @@ export const commandList: ICommand[] = [
     command: '/tokenbalance <token_address>',
     description: 'Get token balance',
   },
+  {
+    command: '/myinfo',
+    description: 'Check your wallet address and balance info',
+  },
+  {
+    command: '/chain',
+    description: 'Show current blockchain network',
+  },
+  {
+    command: '/chainlist',
+    description: 'Show list of supported blockchain networks',
+  },
+  {
+    command: '/setchain <chain_name>',
+    description: 'Switch to a different blockchain network',
+  },
 ];
 
 export function getTimeAgo(timestamp: number): string {

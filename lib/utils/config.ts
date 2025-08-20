@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 // Configuration interface
-export interface Config {
+export interface IConfig {
   ALCHEMY_WS_URL: string;
   ALCHEMY_HTTP_URL: string;
   BASE_MAINET_RPC_URL: string;
@@ -32,14 +32,14 @@ export interface Config {
 }
 
 // Configuration object
-export const config: Config = {
+export const config: IConfig = {
   ALCHEMY_WS_URL: process.env.ALCHEMY_WS_URL!,
   ALCHEMY_HTTP_URL: process.env.ALCHEMY_HTTP_URL!,
   BASE_MAINET_RPC_URL: process.env.BASE_MAINET_RPC_URL!,
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN!,
   TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID!,
   BIG_BUY_THRESHOLD: parseFloat('1.0'),
-  MIN_LIQUIDITY_ETH: parseFloat('10'),
+  MIN_LIQUIDITY_ETH: parseFloat('0.1'),
   MAX_SUPPLY_THRESHOLD: parseFloat('1000000000'),
   WETH_ADDRESS: '0x4200000000000000000000000000000000000006',
   UNISWAP_V2_FACTORY: process.env.UNISWAP_V2_FACTORY!,
