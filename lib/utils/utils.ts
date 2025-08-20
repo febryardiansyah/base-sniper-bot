@@ -50,7 +50,7 @@ export const commandList: ICommand[] = [
     description: 'Show list of supported blockchain networks',
   },
   {
-    command: '/setchain <chain_name>',
+    command: '/setchain <name>',
     description: 'Switch to a different blockchain network',
   },
   {

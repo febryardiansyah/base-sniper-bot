@@ -15,8 +15,11 @@ export const telegramBot = new TelegramBot(config.TELEGRAM_BOT_TOKEN, {
 
 // Send bot startup message
 export async function sendStartupMessage(): Promise<void> {
+  const envStatus = config.IS_DEVELOPMENT ? 'DEVELOPMENT' : 'PRODUCTION';
+  const botName = config.IS_DEVELOPMENT ? "Febry's Defi Bot (DEV)" : "Febry's Defi Bot";
+
   const message =
-    `🤖 Febry's Defi Bot is now ONLINE!\n\n` +
+    `🤖 ${botName} is now ONLINE! (${envStatus})\n\n` +
     `📊 Monitoring new tokens with high liquidity...\n\n` +
     `💬 Use /help to see available commands`;
 
@@ -42,7 +45,8 @@ export function setupCommandHandlers(): void {
       return;
     }
 
-    let helpMessage = "🤖 *Febry's Defi Bot Commands*\n";
+    const envStatus = config.IS_DEVELOPMENT ? ' (DEV)' : '';
+    let helpMessage = `🤖 *Febry's Defi Bot Commands${envStatus}*\n`;
 
     for (const e of commandList) {
       helpMessage += `\n${e.command} - *${e.description}*`;
@@ -206,5 +210,7 @@ export function setupCommandHandlers(): void {
     }
   });
 
-  console.log('🤖 Telegram command handlers set up');
+  console.log(
+    `🤖 Telegram command handlers set up for ${config.IS_DEVELOPMENT ? 'DEVELOPMENT' : 'PRODUCTION'} environment`
+  );
 }
