@@ -212,6 +212,7 @@ build/
 !.env.example
 config/local.json
 secrets.json
+state.json
 
 # Test files
 test-results/
