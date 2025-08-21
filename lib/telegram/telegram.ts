@@ -5,6 +5,7 @@ import { config } from '../utils/config';
 import { commandList } from '../utils/utils';
 import * as MonitoringTelegram from './monitoringTelegram';
 import * as TokenTelegram from './tokenTelegram';
+import * as WalletTelegram from './walletTelegram';
 
 export { MonitoringTelegram };
 
@@ -36,7 +37,7 @@ export async function sendStartupMessage(): Promise<void> {
 // Setup Telegram command handlers
 export function setupCommandHandlers(): void {
   // Handle /help command
-  telegramBot.onText(/\/help/, async msg => {
+  telegramBot.onText(/^\/help$/, async msg => {
     const chatId = msg.chat.id;
 
     // Check if the chat ID matches the configured chat ID
@@ -59,6 +60,7 @@ export function setupCommandHandlers(): void {
 
   MonitoringTelegram.commandHandlers();
   TokenTelegram.commandHandlers();
+  WalletTelegram.commandHandlers();
 
   // Token blacklist commands
   // Show all blacklisted tokens
@@ -92,7 +94,7 @@ export function setupCommandHandlers(): void {
   });
 
   // Add token to blacklist
-  telegramBot.onText(/\/addblacklist (.+)/, async (msg, match) => {
+  telegramBot.onText(/^\/addblacklist (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
 
     // Check if the chat ID matches the configured chat ID
@@ -132,7 +134,7 @@ export function setupCommandHandlers(): void {
   });
 
   // Remove token from blacklist
-  telegramBot.onText(/\/removeblacklist (.+)/, async (msg, match) => {
+  telegramBot.onText(/^\/removeblacklist (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
 
     // Check if the chat ID matches the configured chat ID
@@ -193,7 +195,7 @@ export function setupCommandHandlers(): void {
   });
 
   // check address info
-  telegramBot.onText(/\/myinfo/, async msg => {
+  telegramBot.onText(/^\/myinfo$/, async msg => {
     const chatId = msg.chat.id;
 
     // Check if the chat ID matches the configured chat ID
