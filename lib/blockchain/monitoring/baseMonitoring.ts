@@ -1,13 +1,13 @@
 import { ethers } from 'ethers';
-import { config } from '../../utils/config';
-import { BigBuyData, PairInfo } from '../../interface/types';
 import { BaseContracts } from '../../contracts/contracts';
-import { analyzePair, shouldAlert, getNonWETHToken } from '../pairAnalyzer';
+import { BigBuyData } from '../../interface/types';
+import { checkTokenInfo } from '../../services/info';
 import { MonitoringTelegram, telegramBot } from '../../telegram/telegram';
-import { BaseProviders } from '../providers';
-import { sleep } from '../../utils/utils';
-import { checkTokenInfo, checkUserTokenInfo } from '../../services/info';
+import { config } from '../../utils/config';
 import { uniswapV2Blacklist } from '../../utils/tokenBlacklisted';
+import { sleep } from '../../utils/utils';
+import { analyzePair, shouldAlert } from '../pairAnalyzer';
+import { BaseProviders } from '../providers';
 
 // Constants for thresholds
 const MIN_ETH = ethers.parseEther('5'); // 5 ETH
@@ -412,19 +412,18 @@ function monitorBlocks(): void {
 function stopMonitorBlocks(): void {
   BaseProviders.wsProvider.off('block');
   BaseProviders.wsProvider.removeAllListeners();
-  BaseProviders.wsProvider.destroy();
 }
 
 export function startMonitor(): void {
   isMonitoring = true;
   monitorNewPairs();
-  monitorBlocks();
+  // monitorBlocks();
 }
 
 export function stopMonitor(): void {
   isMonitoring = false;
   stopMonitorNewPairs();
-  stopMonitorBlocks();
+  // stopMonitorBlocks();
 }
 
 export function statusMonitoring(): boolean {
