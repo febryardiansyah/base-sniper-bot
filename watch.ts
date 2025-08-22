@@ -1,18 +1,16 @@
 // watch-base.ts
 import 'dotenv/config';
 import {
-  WebSocketProvider,
-  getAddress,
-  formatEther,
-  formatUnits,
-  id,
-  zeroPadValue,
   Interface,
   Log,
   TransactionResponse,
+  WebSocketProvider,
+  formatEther,
+  formatUnits,
+  getAddress,
+  id,
+  zeroPadValue,
 } from 'ethers';
-import { telegramBot } from './lib/telegram/telegram';
-import { config } from './lib/utils/config';
 
 const WS_URL = 'wss://base-mainnet.g.alchemy.com/v2/iKaulCLd22w9wFhfP07cwjzXIUgrdWC9';
 const RAW_ADDR = '0xf886746FF689c8020ACA226c7eBD19027C3BE2Ba';
@@ -45,9 +43,7 @@ provider.on('block', async (blockNumber: number) => {
       if (involves && tx.value && tx.value > 0n) {
         const dir = to === WATCH ? 'IN' : 'OUT';
         const message = `[ETH ${dir}] ${formatEther(tx.value)} ETH  from:${from}  to:${to ?? 'contract-creation'}  hash:${tx.hash}`;
-        await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
-          parse_mode: 'Markdown',
-        });
+        console.log(message);
       }
     }
   } catch (err) {
@@ -99,9 +95,6 @@ async function handleErc20Or721(log: Log, dir: 'IN' | 'OUT') {
       symbol = String(erc20Iface.decodeFunctionResult('symbol', symData)[0]);
       const message = `[ERC20 ${dir}] ${formatUnits(raw, decimals)} ${symbol}  from:${from}  to:${to}  token:${log.address}  tx:${log.transactionHash}`;
       console.log(message);
-      await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
-        parse_mode: 'Markdown',
-      });
     } catch {
       // Likely ERC-721 (or non‑standard)
       console.log(
@@ -149,17 +142,11 @@ async function handle1155(log: Log, dir: 'IN' | 'OUT') {
       const value = (parsed.args.value as bigint).toString();
       const message = `[ERC1155 ${dir} Single] id:${id} x${value}  from:${from}  to:${to}  token:${log.address}  tx:${log.transactionHash}`;
       console.log(message);
-      await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
-        parse_mode: 'Markdown',
-      });
     } else if (parsed.name === 'TransferBatch') {
       const ids = (parsed.args.ids as readonly bigint[]).map(x => x.toString());
       //   const values = (parsed.args.values as readonly bigint[]).map(x => x.toString());
       const message = `[ERC1155 ${dir} Batch] ids:${ids.join(',')}  from:${from}  to:${to}  token:${log.address}  tx:${log.transactionHash}`;
       console.log(message);
-      await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
-        parse_mode: 'Markdown',
-      });
     }
   } catch (e) {
     console.warn('ERC1155 log parse failed:', e);
