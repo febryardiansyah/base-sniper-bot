@@ -69,6 +69,30 @@ export const commandList: ICommand[] = [
     command: '/resetblacklist',
     description: 'Reset blacklist to default tokens',
   },
+  {
+    command: '/listen <wallet_address>',
+    description: 'Add a wallet address to monitor for transactions',
+  },
+  {
+    command: '/unlisten <wallet_address>',
+    description: 'Remove a wallet address from monitoring',
+  },
+  {
+    command: '/wallets',
+    description: 'Show all monitored wallet addresses',
+  },
+  {
+    command: '/walletstatus',
+    description: 'Show wallet monitoring status',
+  },
+  {
+    command: '/startwallet',
+    description: 'Start wallet monitoring',
+  },
+  {
+    command: '/stopwallet',
+    description: 'Stop wallet monitoring',
+  },
 ];
 
 export function getTimeAgo(timestamp: number): string {

@@ -63,7 +63,7 @@ export async function sendBuyAlert(data: BigBuyData): Promise<void> {
 }
 
 export function commandHandlers(): void {
-  telegramBot.onText(/\/start/, async msg => {
+  telegramBot.onText(/^\/start$/, async msg => {
     const chatId = msg.chat.id;
     if (BaseMonitoring.statusMonitoring()) {
       await telegramBot.sendMessage(chatId, '⚠️ Monitoring is already running');
@@ -73,7 +73,7 @@ export function commandHandlers(): void {
     await telegramBot.sendMessage(chatId, '🟢 Monitoring started');
   });
 
-  telegramBot.onText(/\/stop/, async msg => {
+  telegramBot.onText(/^\/stop$/, async msg => {
     const chatId = msg.chat.id;
     if (!BaseMonitoring.statusMonitoring()) {
       await telegramBot.sendMessage(chatId, '⚠️ Monitoring is not running');
@@ -83,7 +83,7 @@ export function commandHandlers(): void {
     await telegramBot.sendMessage(chatId, '🛑 Monitoring stopped');
   });
 
-  telegramBot.onText(/\/status/, async msg => {
+  telegramBot.onText(/^\/status$/, async msg => {
     const chatId = msg.chat.id;
     const status = BaseMonitoring.statusMonitoring() ? 'Running 🟢' : 'Stopped 🛑';
     await telegramBot.sendMessage(chatId, `Monitoring Status: ${status}`);
