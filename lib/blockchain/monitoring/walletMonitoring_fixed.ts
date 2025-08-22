@@ -51,7 +51,6 @@ class WalletMonitoringService {
 
   private loadWalletAddresses(): void {
     const walletAddresses = stateService.get<string[]>('walletAddresses') || [];
-    console.log(`🔄 Loaded ${walletAddresses.length} wallet addresses from state`);
     this.monitoredWallets.clear();
     walletAddresses.forEach(address => {
       this.monitoredWallets.add(address.toLowerCase());
@@ -342,70 +341,58 @@ class WalletMonitoringService {
     const transferBatchTopic = id('TransferBatch(address,address,address,uint256[],uint256[])');
 
     // Setup filters for each monitored wallet
-    // this.monitoredWallets.forEach(walletAddress => {
-    const checksummedAddress = getAddress('0xf886746ff689c8020aca226c7ebd19027c3be2ba');
-    const addrTopic = zeroPadValue(checksummedAddress, 32);
+    this.monitoredWallets.forEach(walletAddress => {
+      const checksummedAddress = getAddress(walletAddress);
+      const addrTopic = zeroPadValue(checksummedAddress, 32);
 
-    // ERC-20 Transfer events where wallet is sender
-    const transferFromFilter = { topics: [transferTopic, addrTopic] };
-    const fromListener = (log: Log) => this.handleErc20Transfer(log, 'OUT');
-    BaseProviders.wsProvider.on(transferFromFilter, fromListener);
-    this.eventListeners.set(`transfer_from_${'0xf886746ff689c8020aca226c7ebd19027c3be2ba'}`, () => {
-      BaseProviders.wsProvider.off(transferFromFilter, fromListener);
-    });
+      // ERC-20 Transfer events where wallet is sender
+      const transferFromFilter = { topics: [transferTopic, addrTopic] };
+      const fromListener = (log: Log) => this.handleErc20Transfer(log, 'OUT');
+      BaseProviders.wsProvider.on(transferFromFilter, fromListener);
+      this.eventListeners.set(`transfer_from_${walletAddress}`, () => {
+        BaseProviders.wsProvider.off(transferFromFilter, fromListener);
+      });
 
-    // ERC-20 Transfer events where wallet is receiver
-    const transferToFilter = { topics: [transferTopic, null, addrTopic] };
-    const toListener = (log: Log) => this.handleErc20Transfer(log, 'IN');
-    BaseProviders.wsProvider.on(transferToFilter, toListener);
-    this.eventListeners.set(`transfer_to_${'0xf886746ff689c8020aca226c7ebd19027c3be2ba'}`, () => {
-      BaseProviders.wsProvider.off(transferToFilter, toListener);
-    });
+      // ERC-20 Transfer events where wallet is receiver
+      const transferToFilter = { topics: [transferTopic, null, addrTopic] };
+      const toListener = (log: Log) => this.handleErc20Transfer(log, 'IN');
+      BaseProviders.wsProvider.on(transferToFilter, toListener);
+      this.eventListeners.set(`transfer_to_${walletAddress}`, () => {
+        BaseProviders.wsProvider.off(transferToFilter, toListener);
+      });
 
-    // ERC-1155 TransferSingle events where wallet is sender
-    const erc1155FromSingle = { topics: [transferSingleTopic, null, addrTopic] };
-    const singleFromListener = (log: Log) => this.handleErc1155Transfer(log, 'OUT');
-    BaseProviders.wsProvider.on(erc1155FromSingle, singleFromListener);
-    this.eventListeners.set(
-      `erc1155_single_from_${'0xf886746ff689c8020aca226c7ebd19027c3be2ba'}`,
-      () => {
+      // ERC-1155 TransferSingle events where wallet is sender
+      const erc1155FromSingle = { topics: [transferSingleTopic, null, addrTopic] };
+      const singleFromListener = (log: Log) => this.handleErc1155Transfer(log, 'OUT');
+      BaseProviders.wsProvider.on(erc1155FromSingle, singleFromListener);
+      this.eventListeners.set(`erc1155_single_from_${walletAddress}`, () => {
         BaseProviders.wsProvider.off(erc1155FromSingle, singleFromListener);
-      }
-    );
+      });
 
-    // ERC-1155 TransferSingle events where wallet is receiver
-    const erc1155ToSingle = { topics: [transferSingleTopic, null, null, addrTopic] };
-    const singleToListener = (log: Log) => this.handleErc1155Transfer(log, 'IN');
-    BaseProviders.wsProvider.on(erc1155ToSingle, singleToListener);
-    this.eventListeners.set(
-      `erc1155_single_to_${'0xf886746ff689c8020aca226c7ebd19027c3be2ba'}`,
-      () => {
+      // ERC-1155 TransferSingle events where wallet is receiver
+      const erc1155ToSingle = { topics: [transferSingleTopic, null, null, addrTopic] };
+      const singleToListener = (log: Log) => this.handleErc1155Transfer(log, 'IN');
+      BaseProviders.wsProvider.on(erc1155ToSingle, singleToListener);
+      this.eventListeners.set(`erc1155_single_to_${walletAddress}`, () => {
         BaseProviders.wsProvider.off(erc1155ToSingle, singleToListener);
-      }
-    );
+      });
 
-    // ERC-1155 TransferBatch events where wallet is sender
-    const erc1155FromBatch = { topics: [transferBatchTopic, null, addrTopic] };
-    const batchFromListener = (log: Log) => this.handleErc1155Transfer(log, 'OUT');
-    BaseProviders.wsProvider.on(erc1155FromBatch, batchFromListener);
-    this.eventListeners.set(
-      `erc1155_batch_from_${'0xf886746ff689c8020aca226c7ebd19027c3be2ba'}`,
-      () => {
+      // ERC-1155 TransferBatch events where wallet is sender
+      const erc1155FromBatch = { topics: [transferBatchTopic, null, addrTopic] };
+      const batchFromListener = (log: Log) => this.handleErc1155Transfer(log, 'OUT');
+      BaseProviders.wsProvider.on(erc1155FromBatch, batchFromListener);
+      this.eventListeners.set(`erc1155_batch_from_${walletAddress}`, () => {
         BaseProviders.wsProvider.off(erc1155FromBatch, batchFromListener);
-      }
-    );
+      });
 
-    // ERC-1155 TransferBatch events where wallet is receiver
-    const erc1155ToBatch = { topics: [transferBatchTopic, null, null, addrTopic] };
-    const batchToListener = (log: Log) => this.handleErc1155Transfer(log, 'IN');
-    BaseProviders.wsProvider.on(erc1155ToBatch, batchToListener);
-    this.eventListeners.set(
-      `erc1155_batch_to_${'0xf886746ff689c8020aca226c7ebd19027c3be2ba'}`,
-      () => {
+      // ERC-1155 TransferBatch events where wallet is receiver
+      const erc1155ToBatch = { topics: [transferBatchTopic, null, null, addrTopic] };
+      const batchToListener = (log: Log) => this.handleErc1155Transfer(log, 'IN');
+      BaseProviders.wsProvider.on(erc1155ToBatch, batchToListener);
+      this.eventListeners.set(`erc1155_batch_to_${walletAddress}`, () => {
         BaseProviders.wsProvider.off(erc1155ToBatch, batchToListener);
-      }
-    );
-    // });
+      });
+    });
 
     // Native ETH transfer monitoring
     const blockListener = (blockNumber: number) => this.handleNativeEthTransfer(blockNumber);
