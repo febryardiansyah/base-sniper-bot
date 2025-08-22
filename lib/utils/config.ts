@@ -11,6 +11,7 @@ export interface IConfig {
   TELEGRAM_CHAT_ID: string;
   BIG_BUY_THRESHOLD: number;
   MIN_LIQUIDITY_ETH: number;
+  MAX_LIQUIDITY_ETH: number;
   MAX_SUPPLY_THRESHOLD: number;
   WETH_ADDRESS: string;
   ETH_ADDRESS: string;
@@ -41,7 +42,12 @@ export const config: IConfig = {
   TELEGRAM_BOT_TOKEN: getTelegramBotToken(),
   TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID!,
   BIG_BUY_THRESHOLD: parseFloat('1.0'),
-  MIN_LIQUIDITY_ETH: parseFloat('0.1'),
+  MIN_LIQUIDITY_ETH: process.env.MIN_LIQUIDITY_ETH
+    ? parseFloat(process.env.MIN_LIQUIDITY_ETH)
+    : 0.1,
+  MAX_LIQUIDITY_ETH: process.env.MAX_LIQUIDITY_ETH
+    ? parseFloat(process.env.MAX_LIQUIDITY_ETH)
+    : 10.0,
   MAX_SUPPLY_THRESHOLD: parseFloat('1000000000'),
   WETH_ADDRESS: '0x4200000000000000000000000000000000000006',
   UNISWAP_V2_FACTORY: process.env.UNISWAP_V2_FACTORY!,
