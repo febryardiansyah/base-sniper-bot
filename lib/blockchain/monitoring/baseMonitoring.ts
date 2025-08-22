@@ -3,8 +3,8 @@ import { BaseContracts } from '../../contracts/contracts';
 import { BigBuyData } from '../../interface/types';
 import { checkTokenInfo } from '../../services/info';
 import { MonitoringTelegram, telegramBot } from '../../telegram/telegram';
+import { BlacklistUtils } from '../../utils/blacklistUtils';
 import { config } from '../../utils/config';
-import { uniswapV2Blacklist } from '../../utils/tokenBlacklisted';
 import { sleep } from '../../utils/utils';
 import { analyzePair, shouldAlert } from '../pairAnalyzer';
 import { BaseProviders } from '../providers';
@@ -77,8 +77,8 @@ function monitorNewPairs(): void {
           const pairInfo = await analyzePair(pairAddress, token0, token1);
           const isShouldAlert = pairInfo && shouldAlert(pairInfo);
           const isBlackListed =
-            uniswapV2Blacklist.includes(pairInfo!.token0.symbol) ||
-            uniswapV2Blacklist.includes(pairInfo!.token1.symbol);
+            BlacklistUtils.isBlacklisted(pairInfo!.token0.symbol) ||
+            BlacklistUtils.isBlacklisted(pairInfo!.token1.symbol);
 
           if (isShouldAlert && !isBlackListed) {
             await MonitoringTelegram.sendPairAlert(pairInfo, factoryName);
