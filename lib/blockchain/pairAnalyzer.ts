@@ -1,9 +1,8 @@
 import { ethers } from 'ethers';
-import BigNumber from 'bignumber.js';
-import { config } from '../utils/config';
-import { PairInfo, ITokenInfo } from '../interface/types';
 import { BaseContracts } from '../contracts/contracts';
+import { ITokenInfo, PairInfo } from '../interface/types';
 import { checkTokenInfo } from '../services/info';
+import { config } from '../utils/config';
 
 // Analyze pair for liquidity and token information
 export async function analyzePair(
@@ -54,10 +53,17 @@ export async function analyzePair(
 
 // Check if pair should trigger an alert
 export function shouldAlert(pairInfo: PairInfo): boolean {
+  return (
+    pairInfo.liquidityETH > config.MIN_LIQUIDITY_ETH &&
+    pairInfo.liquidityETH < config.MAX_LIQUIDITY_ETH
+  );
   // Check minimum liquidity
-  if (pairInfo.liquidityETH < config.MIN_LIQUIDITY_ETH) {
-    return false;
-  }
+  // if (
+  //   pairInfo.liquidityETH > config.MIN_LIQUIDITY_ETH &&
+  //   pairInfo.liquidityETH < config.MAX_LIQUIDITY_ETH
+  // ) {
+  //   return true;
+  // }
 
   // Check token supply (avoid tokens with extremely high supply)
   // const nonWETHToken = pairInfo.token0.address.toLowerCase() === config.WETH_ADDRESS
@@ -71,7 +77,7 @@ export function shouldAlert(pairInfo: PairInfo): boolean {
   //   return false;
   // }
 
-  return true;
+  // return false;
 }
 
 // Get non-WETH token from pair
