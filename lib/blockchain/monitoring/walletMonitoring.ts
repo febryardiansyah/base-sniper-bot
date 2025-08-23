@@ -13,6 +13,7 @@ import { stateService } from '../../services/state';
 import { telegramBot } from '../../telegram/telegram';
 import { config } from '../../utils/config';
 import { BaseProviders } from '../providers';
+import { isContractVerified } from '../../services/etherscan';
 
 class WalletMonitoringService {
   private isMonitoring = false;
@@ -323,13 +324,36 @@ class WalletMonitoringService {
           headline = 'Swap Activity';
         }
 
+        // Verify first OUT / IN token contracts (ignore native ETH placeholder)
+        let outFlag = '';
+        let inFlag = '';
+        if (outs.length > 0 && outs[0].token !== 'ETH') {
+          try {
+            const verified = await isContractVerified(outs[0].token);
+            outFlag = verified ? '✅' : '❌';
+          } catch {
+            outFlag = '❔';
+          }
+        }
+        if (ins.length > 0 && ins[0].token !== 'ETH') {
+          try {
+            const verified = await isContractVerified(ins[0].token);
+            inFlag = verified ? '✅' : '❌';
+          } catch {
+            inFlag = '❔';
+          }
+        }
+
         const message =
           `🔄 *SWAP DETECTED*\n\n` +
           `👤 Wallet: \`${walletChecksum}\` [View](https://debank.com/profile/${walletChecksum})\n\n` +
           `📝 TX: [View](https://basescan.org/tx/${txHash})\n\n` +
-          // `💱 ${headline}\n\n` +
-          (outs.length > 0 ? `🔻 *Out*:\n${outs[0].amount} ${outs[0].symbol}\n\n` : '') +
-          (ins.length > 0 ? `🔺 *In*:\n${ins[0].amount} ${ins[0].symbol}\n\n` : '') +
+          (outs.length > 0
+            ? `🔻 *Out*:\n${outs[0].amount} ${outs[0].symbol}${outFlag ? ' ' + outFlag : ''}\n\n`
+            : '') +
+          (ins.length > 0
+            ? `🔺 *In*:\n${ins[0].amount} ${ins[0].symbol}${inFlag ? ' ' + inFlag : ''}\n\n`
+            : '') +
           `⏰ Aggregated ERC-20${tx && tx.value && tx.value > 0n ? ' / ETH' : ''} Movements`;
 
         try {
