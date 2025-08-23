@@ -1,11 +1,42 @@
 import axios from 'axios';
 import { config } from '../utils/config';
 import { getTimeAgo } from './../utils/utils';
-import { ITransaction, IEtherscanResponse } from '../interface/types';
+import { IEtherscanResponse } from '../interface/types';
+import { ISourceCodeResponse } from '../interface/etherscan.interface';
 
 const key = config.ETHER_SCAN_API_KEY;
 const baseUrl = config.ETHER_SCAN_API;
 const baseChainId = config.BASE_CHAIN_ID;
+
+// Cache to avoid hammering explorer
+const verificationCache = new Map<string, boolean>();
+
+export async function isContractVerified(address: string): Promise<boolean> {
+  const addr = address.toLowerCase();
+  if (verificationCache.has(addr)) return verificationCache.get(addr)!;
+
+  try {
+    const params = new URLSearchParams({
+      chainid: String(baseChainId),
+      module: 'contract',
+      action: 'getsourcecode',
+      address: addr,
+      apikey: key,
+    });
+    const { data } = await axios.get<ISourceCodeResponse>(`${baseUrl}?${params.toString()}`);
+    if (data.status !== '1' || !Array.isArray(data.result) || data.result.length === 0) {
+      verificationCache.set(addr, false);
+      return false;
+    }
+    const item = data.result[0];
+    const verified = !!item.SourceCode && item.ABI !== 'Contract source code not verified';
+    verificationCache.set(addr, verified);
+    return verified;
+  } catch (e) {
+    // On error, assume not verified (do not cache to allow future retry)
+    return false;
+  }
+}
 
 export async function getWalletTransactions(walletAddress: string): Promise<IEtherscanResponse> {
   const params = new URLSearchParams({

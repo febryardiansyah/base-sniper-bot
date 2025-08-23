@@ -8,11 +8,20 @@ import { telegramBot } from './telegram';
 // Send new pair alert
 export async function sendPairAlert(pairInfo: PairInfo, exchange: string): Promise<void> {
   const nonWETHToken = getNonWETHToken(pairInfo);
+  const now = new Date();
+  const timestamp = now.toISOString().replace('T', ' ').replace('Z', ' UTC');
+
+  // Determine which side is non-WETH for flag placement
+  const lowerWeth = config.WETH_ADDRESS.toLowerCase();
+  const nonWethIsToken0 = pairInfo.token0.address.toLowerCase() !== lowerWeth;
+  const nonWethVerified = nonWethIsToken0 ? pairInfo.token0Verified : pairInfo.token1Verified;
+  const verifiedEmoji = nonWethVerified === undefined ? '❔' : nonWethVerified ? '✅' : '❌';
 
   const message =
     `🎯 *NEW HIGH-LIQUIDITY TOKEN DETECTED*\n\n` +
+    `🕒 Time: ${timestamp}\n` +
     `🏪 Exchange: *${exchange}*\n` +
-    `🪙 Token: *${nonWETHToken.symbol}* (${nonWETHToken.name})\n` +
+    `🪙 Token: *${nonWETHToken.symbol}* (${nonWETHToken.name}) ${verifiedEmoji}\n` +
     `📍 Address: \`${nonWETHToken.address}\`\n` +
     `💧 Liquidity: *${pairInfo.liquidityETH.toFixed(2)} ETH*\n` +
     `📊 Total Supply: *${new BigNumber(nonWETHToken.totalSupply)

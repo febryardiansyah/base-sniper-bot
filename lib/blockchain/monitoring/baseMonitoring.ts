@@ -7,6 +7,7 @@ import { BlacklistUtils } from '../../utils/blacklistUtils';
 import { config } from '../../utils/config';
 import { sleep } from '../../utils/utils';
 import { analyzePair, shouldAlert } from '../pairAnalyzer';
+import { isContractVerified } from '../../services/etherscan';
 import { BaseProviders } from '../providers';
 
 // Constants for thresholds
@@ -76,11 +77,32 @@ function monitorNewPairs(): void {
 
           const pairInfo = await analyzePair(pairAddress, token0, token1);
           const isShouldAlert = pairInfo && shouldAlert(pairInfo);
+          if (!pairInfo) return;
           const isBlackListed =
-            BlacklistUtils.isBlacklisted(pairInfo!.token0.symbol) ||
-            BlacklistUtils.isBlacklisted(pairInfo!.token1.symbol);
+            BlacklistUtils.isBlacklisted(pairInfo.token0.symbol) ||
+            BlacklistUtils.isBlacklisted(pairInfo.token1.symbol);
 
           if (isShouldAlert && !isBlackListed) {
+            // Verify only non-WETH tokens (ignore WETH/ETH side)
+            const lowerWeth = config.WETH_ADDRESS.toLowerCase();
+            const verificationPromises: Promise<void>[] = [];
+            if (pairInfo.token0.address.toLowerCase() !== lowerWeth) {
+              verificationPromises.push(
+                (async () => {
+                  pairInfo.token0Verified = await isContractVerified(pairInfo.token0.address);
+                })()
+              );
+            }
+            if (pairInfo.token1.address.toLowerCase() !== lowerWeth) {
+              verificationPromises.push(
+                (async () => {
+                  pairInfo.token1Verified = await isContractVerified(pairInfo.token1.address);
+                })()
+              );
+            }
+            if (verificationPromises.length) {
+              await Promise.all(verificationPromises);
+            }
             await MonitoringTelegram.sendPairAlert(pairInfo, factoryName);
           }
         } catch (error) {

@@ -6,6 +6,9 @@ export interface PairInfo {
   reserve0: string;
   reserve1: string;
   liquidityETH: number;
+  // Optional verification flags (true = verified source code on explorer)
+  token0Verified?: boolean;
+  token1Verified?: boolean;
 }
 
 // Big buy alert data interface

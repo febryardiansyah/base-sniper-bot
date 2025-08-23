@@ -47,6 +47,7 @@ module.exports = [
       'no-duplicate-imports': 'error',
       'no-unused-expressions': 'off',
       'no-unused-vars': 'off',
+      'no-useless-catch': 'off',
       'prefer-const': 'error',
       'no-var': 'error',
       'no-undef': 'off',
