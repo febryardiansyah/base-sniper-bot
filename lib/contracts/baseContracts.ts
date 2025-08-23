@@ -4,6 +4,7 @@ import { BaseProviders } from '../blockchain/providers';
 
 // Import ABIs
 import uniswapV2FactoryAbiJson from '../../abi/erc20/UniswapV2Factory.json';
+import aerodromeFactoryAbiJson from '../../abi/erc20/AerodromeFactory.json';
 import uniswapV2PairJson from '../../abi/erc20/UniswapV2Pair.json';
 import erc20AbiJson from '../../abi/erc20/ERC20.json';
 import routerAbiJson from '../../abi/erc20/Router.json';
@@ -28,7 +29,11 @@ export const zoraFactoryAbi = zoraFactoryAbiJson;
 // Initialize factory contracts
 export const factories = [
   new ethers.Contract(config.UNISWAP_V2_FACTORY, uniswapV2FactoryAbiJson, BaseProviders.wsProvider),
-  new ethers.Contract(config.AERODROME_FACTORY, uniswapV2FactoryAbiJson, BaseProviders.wsProvider),
+  new ethers.Contract(
+    config.AERODROME_FACTORY,
+    aerodromeFactoryAbiJson, // Aerodrome has different PairCreated signature (adds stable bool)
+    BaseProviders.wsProvider
+  ),
 ];
 
 // Initialize Uniswap V3 factory contract

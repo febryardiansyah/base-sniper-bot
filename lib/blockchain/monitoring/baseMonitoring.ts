@@ -59,58 +59,104 @@ function monitorNewPairs(): void {
   // Monitor Uniswap V2 and Aerodrome pairs
   BaseContracts.factories.forEach((factory, index) => {
     const factoryName = BaseContracts.factoryNames[index];
+    const isAerodrome = factoryName.toLowerCase().includes('aerodrome');
 
-    factory.on(
-      'PairCreated',
-      async (token0: string, token1: string, pairAddress: string, pairIndex: bigint) => {
-        try {
-          console.log(`🆕 New pair detected on ${factoryName}: ${pairAddress}`);
-
-          if (trackedPairs.has(pairAddress.toLowerCase())) {
-            return; // Already processed
-          }
-
-          trackedPairs.add(pairAddress.toLowerCase());
-
-          // Wait for confirmations
-          await sleep(config.RETRY_DELAY_MS * config.BLOCK_CONFIRMATION_COUNT);
-
-          const pairInfo = await analyzePair(pairAddress, token0, token1);
-          const isShouldAlert = pairInfo && shouldAlert(pairInfo);
-          if (!pairInfo) return;
-          const isBlackListed =
-            BlacklistUtils.isBlacklisted(pairInfo.token0.symbol) ||
-            BlacklistUtils.isBlacklisted(pairInfo.token1.symbol);
-
-          if (isShouldAlert && !isBlackListed) {
-            // Verify only non-WETH tokens (ignore WETH/ETH side)
-            const lowerWeth = config.WETH_ADDRESS.toLowerCase();
-            const verificationPromises: Promise<void>[] = [];
-            if (pairInfo.token0.address.toLowerCase() !== lowerWeth) {
-              verificationPromises.push(
-                (async () => {
-                  pairInfo.token0Verified = await isContractVerified(pairInfo.token0.address);
-                })()
-              );
-            }
-            if (pairInfo.token1.address.toLowerCase() !== lowerWeth) {
-              verificationPromises.push(
-                (async () => {
-                  pairInfo.token1Verified = await isContractVerified(pairInfo.token1.address);
-                })()
-              );
-            }
-            if (verificationPromises.length) {
-              await Promise.all(verificationPromises);
-            }
-            await MonitoringTelegram.sendPairAlert(pairInfo, factoryName);
-          }
-        } catch (error) {
-          console.error(`Error processing new pair ${pairAddress}:`, error);
+    if (isAerodrome) {
+      // Aerodrome signature: PoolCreated(address token0, address token1, bool stable, address pool, uint256)
+      factory.on(
+        'PoolCreated',
+        async (
+          token0: string,
+          token1: string,
+          stable: boolean,
+          poolAddress: string,
+          poolIndex: bigint
+        ) => {
+          await handleNewPair({
+            token0,
+            token1,
+            pairAddress: poolAddress,
+            factoryName,
+            extra: { stable, poolIndex },
+          });
         }
-      }
-    );
+      );
+    } else {
+      // Uniswap V2 signature: PairCreated(address token0, address token1, address pair, uint256)
+      factory.on(
+        'PairCreated',
+        async (token0: string, token1: string, pairAddress: string, pairIndex: bigint) => {
+          await handleNewPair({
+            token0,
+            token1,
+            pairAddress,
+            factoryName,
+            extra: { pairIndex },
+          });
+        }
+      );
+    }
   });
+  interface NewPairParams {
+    token0: string;
+    token1: string;
+    pairAddress: string;
+    factoryName: string;
+    extra?: Record<string, unknown>;
+  }
+
+  async function handleNewPair(params: NewPairParams) {
+    const { token0, token1, pairAddress, factoryName, extra } = params;
+    try {
+      console.log(`🆕 New pair detected on ${factoryName}: ${pairAddress}`);
+      if (
+        factoryName.toLowerCase().includes('aerodrome') &&
+        extra &&
+        typeof (extra as Record<string, unknown>).stable === 'boolean'
+      ) {
+        console.log(`   • Type: ${extra.stable ? 'Stable' : 'Volatile'}`);
+      }
+      if (trackedPairs.has(pairAddress.toLowerCase())) return;
+      trackedPairs.add(pairAddress.toLowerCase());
+      await sleep(config.RETRY_DELAY_MS * config.BLOCK_CONFIRMATION_COUNT);
+      const pairInfo = await analyzePair(pairAddress, token0, token1);
+      if (!pairInfo) return;
+      const isShouldAlert = shouldAlert(pairInfo);
+      const isBlackListed =
+        BlacklistUtils.isBlacklisted(pairInfo.token0.symbol) ||
+        BlacklistUtils.isBlacklisted(pairInfo.token1.symbol);
+      if (isShouldAlert && !isBlackListed) {
+        const lowerWeth = config.WETH_ADDRESS.toLowerCase();
+        const verificationPromises: Promise<void>[] = [];
+        if (pairInfo.token0.address.toLowerCase() !== lowerWeth) {
+          verificationPromises.push(
+            (async () => {
+              pairInfo.token0Verified = await isContractVerified(pairInfo.token0.address);
+            })()
+          );
+        }
+        if (pairInfo.token1.address.toLowerCase() !== lowerWeth) {
+          verificationPromises.push(
+            (async () => {
+              pairInfo.token1Verified = await isContractVerified(pairInfo.token1.address);
+            })()
+          );
+        }
+        if (verificationPromises.length) await Promise.all(verificationPromises);
+        // Append stable/volatile info for Aerodrome pools
+        if (
+          factoryName.toLowerCase().includes('aerodrome') &&
+          extra &&
+          typeof (extra as Record<string, unknown>).stable === 'boolean'
+        ) {
+          pairInfo.pairAddress = `${pairInfo.pairAddress} (${extra.stable ? 'Stable' : 'Volatile'})`;
+        }
+        await MonitoringTelegram.sendPairAlert(pairInfo, factoryName);
+      }
+    } catch (error) {
+      console.error(`Error processing new pair ${pairAddress}:`, error);
+    }
+  }
 
   // Monitor Uniswap V3 pools
   BaseContracts.uniswapV3Factory.on(
@@ -121,12 +167,12 @@ function monitorNewPairs(): void {
       fee: number,
       tickSpacing: number,
       pool: string,
-      event: any
+      event: ethers.EventLog
     ) => {
       try {
         console.log(`🟦 New V3 pool detected: ${pool}`);
         console.log(`    token0=${token0} token1=${token1} fee=${fee} tickSpacing=${tickSpacing}`);
-        console.log(`    tx=${event.log.transactionHash}`);
+        console.log(`    tx=${event.transactionHash}`);
 
         // Create a contract instance for the pool to listen for Mint events
         const poolContract = new ethers.Contract(
@@ -145,7 +191,7 @@ function monitorNewPairs(): void {
             amount: bigint,
             amount0: bigint,
             amount1: bigint,
-            ev2: any
+            ev2: ethers.EventLog
           ) => {
             // Check thresholds on either side if token matches WETH/USDC
             let hit = false;
@@ -188,7 +234,7 @@ function monitorNewPairs(): void {
                 console.log(`    amount1=${amount1} (token1 ${token1})`);
               }
 
-              console.log(`    tx=${ev2.log.transactionHash}`);
+              console.log(`    tx=${ev2.transactionHash}`);
 
               // Send Telegram alert
               const message =
@@ -199,7 +245,7 @@ function monitorNewPairs(): void {
                 `Token1: ${token1.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : token1.toLowerCase() === config.USDC_ADDRESS.toLowerCase() ? 'USDC' : token1}\n` +
                 `Amount0: ${formatAmount(token0, amount0)}\n` +
                 `Amount1: ${formatAmount(token1, amount1)}\n` +
-                `TX: [View](https://basescan.org/tx/${ev2.log.transactionHash})`;
+                `TX: [View](https://basescan.org/tx/${ev2.transactionHash})`;
 
               telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, { parse_mode: 'Markdown' });
             }
@@ -221,7 +267,7 @@ function monitorNewPairs(): void {
       fee: number,
       tickSpacing: number,
       hooks: string,
-      event: any
+      event: ethers.EventLog
     ) => {
       try {
         console.log(`🟪 New V4 pool initialized: ${id}`);
@@ -244,7 +290,7 @@ function monitorNewPairs(): void {
       tickLower: number,
       tickUpper: number,
       liquidityDelta: bigint,
-      event: any
+      event: ethers.EventLog
     ) => {
       console.log(`\n🟧 [V4] ModifyLiquidity  id=${id}`);
       try {
@@ -252,9 +298,7 @@ function monitorNewPairs(): void {
         if (liquidityDelta <= 0n) return;
 
         // Get transaction receipt to check token transfers
-        const receipt = await BaseProviders.wsProvider.getTransactionReceipt(
-          event.log.transactionHash
-        );
+        const receipt = await BaseProviders.wsProvider.getTransactionReceipt(event.transactionHash);
         if (!receipt) return;
 
         // Get the currencies for this pool ID
@@ -325,7 +369,7 @@ function monitorNewPairs(): void {
             );
           }
 
-          console.log(`    tx=${event.log.transactionHash}`);
+          console.log(`    tx=${event.transactionHash}`);
 
           // Send Telegram alert
           const message =
@@ -336,7 +380,7 @@ function monitorNewPairs(): void {
             `Currency1: ${currency1.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : currency1.toLowerCase() === config.USDC_ADDRESS.toLowerCase() ? 'USDC' : currency1}\n` +
             (isToken0WethOrUsdc ? `Amount0: ${formatAmount(currency0, amount0)}\n` : '') +
             (isToken1WethOrUsdc ? `Amount1: ${formatAmount(currency1, amount1)}\n` : '') +
-            `TX: [View](https://basescan.org/tx/${event.log.transactionHash})`;
+            `TX: [View](https://basescan.org/tx/${event.transactionHash})`;
 
           telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, { parse_mode: 'Markdown' });
         }
@@ -379,10 +423,10 @@ function monitorBigBuys(): void {
         amountOutMin: bigint,
         path: string[],
         to: string,
-        event: any
+        event: ethers.EventLog
       ) => {
         try {
-          const txHash = event.log.transactionHash;
+          const txHash = event.transactionHash;
 
           if (trackedTransactions.has(txHash)) {
             return;
