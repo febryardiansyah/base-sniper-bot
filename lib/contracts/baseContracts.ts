@@ -1,13 +1,13 @@
 import * as ethers from 'ethers';
-import { config } from '../utils/config';
 import { BaseProviders } from '../blockchain/providers';
+import { config } from '../utils/config';
 
 // Import ABIs
-import uniswapV2FactoryAbiJson from '../../abi/erc20/UniswapV2Factory.json';
 import aerodromeFactoryAbiJson from '../../abi/erc20/AerodromeFactory.json';
-import uniswapV2PairJson from '../../abi/erc20/UniswapV2Pair.json';
 import erc20AbiJson from '../../abi/erc20/ERC20.json';
 import routerAbiJson from '../../abi/erc20/Router.json';
+import uniswapV2FactoryAbiJson from '../../abi/erc20/UniswapV2Factory.json';
+import uniswapV2PairJson from '../../abi/erc20/UniswapV2Pair.json';
 
 // Import Uniswap V3 and V4 ABIs
 import uniswapV3FactoryAbiJson from '../../abi/erc20/UniswapV3Factory.json';
@@ -72,6 +72,12 @@ export const factoryNames = ['Uniswap V2', 'Aerodrome'];
 export const routerNames = ['Uniswap V2', 'Aerodrome', 'Universal Router'];
 
 // Create pair contract instance
-export function createPairContract(pairAddress: string): ethers.Contract {
+export function createPairContract(
+  pairAddress: string,
+  uniswapVersion: number = 2
+): ethers.Contract {
+  if (uniswapVersion === 3) {
+    return new ethers.Contract(pairAddress, uniswapV3PoolAbiJson, BaseProviders.httpProvider);
+  }
   return new ethers.Contract(pairAddress, uniswapV2PairJson, BaseProviders.httpProvider);
 }
