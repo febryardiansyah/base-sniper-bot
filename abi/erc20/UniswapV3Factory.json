@@ -19,7 +19,7 @@
         "name": "fee",
         "type": "uint24",
         "internalType": "uint24",
-        "indexed": false
+        "indexed": true
       },
       {
         "name": "tickSpacing",

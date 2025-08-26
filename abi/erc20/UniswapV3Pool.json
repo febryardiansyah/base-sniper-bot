@@ -53,11 +53,7 @@
     "name": "token0",
     "inputs": [],
     "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
+      { "type": "address", "name": "" }
     ],
     "stateMutability": "view"
   },
@@ -66,11 +62,40 @@
     "name": "token1",
     "inputs": [],
     "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
+      { "type": "address", "name": "" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "fee",
+    "inputs": [],
+    "outputs": [
+      { "type": "uint24", "name": "" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "liquidity",
+    "inputs": [],
+    "outputs": [
+      { "type": "uint128", "name": "" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "slot0",
+    "inputs": [],
+    "outputs": [
+      { "type": "uint160", "name": "sqrtPriceX96" },
+      { "type": "int24", "name": "tick" },
+      { "type": "uint16", "name": "observationIndex" },
+      { "type": "uint16", "name": "observationCardinality" },
+      { "type": "uint16", "name": "observationCardinalityNext" },
+      { "type": "uint8", "name": "feeProtocol" },
+      { "type": "bool", "name": "unlocked" }
     ],
     "stateMutability": "view"
   }

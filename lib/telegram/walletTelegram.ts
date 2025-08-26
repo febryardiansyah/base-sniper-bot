@@ -100,6 +100,32 @@ export function commandHandlers(): void {
     }
   });
 
+  // Remove all wallet addresses from monitoring list
+  telegramBot.onText(/^\/unlistenall$/, async msg => {
+    const chatId = msg.chat.id;
+    if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
+      await telegramBot.sendMessage(chatId, '⛔ Unauthorized access');
+      return;
+    }
+    try {
+      const count = walletMonitoringService.getMonitoredWalletCount();
+      if (count === 0) {
+        await telegramBot.sendMessage(chatId, '📝 No wallets to remove');
+        return;
+      }
+      const { removed, wasMonitoring } = walletMonitoringService.clearAllWallets();
+      // If previously monitoring and wallets cleared, user can re-start after adding new wallets
+      await telegramBot.sendMessage(
+        chatId,
+        `🧹 Removed all monitored wallets (total ${removed}).${
+          wasMonitoring ? '\n🛑 Monitoring stopped automatically.' : ''
+        }`
+      );
+    } catch (error) {
+      await telegramBot.sendMessage(chatId, `❌ Error clearing monitored wallets: ${error}`);
+    }
+  });
+
   // Show all monitored wallets
   telegramBot.onText(/^\/wallets$/, async msg => {
     const chatId = msg.chat.id;
