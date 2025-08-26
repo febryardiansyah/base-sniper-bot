@@ -166,91 +166,99 @@ function monitorNewPairs(): void {
       token1: string,
       fee: number,
       tickSpacing: number,
-      pool: string,
-      event: ethers.EventLog
+      pool: string
+      // event: ethers.EventLog
     ) => {
+      console.log(`🟦 New V3 pool detected: ${pool}`);
+      console.log(`
+    ✅ [V3] New Pool Confirmed!
+    -----------------------------------------
+    Pool Address: ${pool}
+    Tokens: ${token0}, ${token1}
+    Fee: ${fee}
+    -----------------------------------------
+  `);
+      // console.log(`    token0=${token0} token1=${token1} fee=${fee} tickSpacing=${tickSpacing}`);
+      // console.log(`    tx=${Event.transactionHash}`);
       try {
-        console.log(`🟦 New V3 pool detected: ${pool}`);
-        console.log(`    token0=${token0} token1=${token1} fee=${fee} tickSpacing=${tickSpacing}`);
-        console.log(`    tx=${event.transactionHash}`);
-
         // Create a contract instance for the pool to listen for Mint events
-        const poolContract = new ethers.Contract(
-          pool,
-          BaseContracts.uniswapV3PoolAbi,
-          BaseProviders.wsProvider
+        const poolContract = await analyzePair(pool, token0, token1);
+        if (!poolContract) return;
+
+        console.log(
+          `🟦 Listening for liquidity additions on V3 pool: ${poolContract.liquidityETH}`
         );
 
-        poolContract.on(
-          'Mint',
-          async (
-            sender: string,
-            owner: string,
-            tickLower: number,
-            tickUpper: number,
-            amount: bigint,
-            amount0: bigint,
-            amount1: bigint,
-            ev2: ethers.EventLog
-          ) => {
-            // Check thresholds on either side if token matches WETH/USDC
-            let hit = false;
-            if (
-              token0.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ||
-              token0.toLowerCase() === config.USDC_ADDRESS.toLowerCase()
-            ) {
-              if (meetsThreshold(token0, amount0)) hit = true;
-            }
-            if (
-              token1.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ||
-              token1.toLowerCase() === config.USDC_ADDRESS.toLowerCase()
-            ) {
-              if (meetsThreshold(token1, amount1)) hit = true;
-            }
+        // poolContract.on(
+        //   'Mint',
+        //   async (
+        //     sender: string,
+        //     owner: string,
+        //     tickLower: number,
+        //     tickUpper: number,
+        //     amount: bigint,
+        //     amount0: bigint,
+        //     amount1: bigint,
+        //     ev2: ethers.EventLog
+        //   ) => {
+        //     // Check thresholds on either side if token matches WETH/USDC
+        //     let hit = false;
+        //     if (
+        //       token0.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ||
+        //       token0.toLowerCase() === config.USDC_ADDRESS.toLowerCase()
+        //     ) {
+        //       if (meetsThreshold(token0, amount0)) hit = true;
+        //     }
+        //     if (
+        //       token1.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ||
+        //       token1.toLowerCase() === config.USDC_ADDRESS.toLowerCase()
+        //     ) {
+        //       if (meetsThreshold(token1, amount1)) hit = true;
+        //     }
 
-            if (hit) {
-              console.log('✅ [V3] Mint meets threshold');
-              console.log(`    pool=${pool} owner=${owner}`);
+        //     if (hit) {
+        //       console.log('✅ [V3] Mint meets threshold');
+        //       console.log(`    pool=${pool} owner=${owner}`);
 
-              if (
-                token0.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ||
-                token0.toLowerCase() === config.USDC_ADDRESS.toLowerCase()
-              ) {
-                console.log(
-                  `    amount0=${formatAmount(token0, amount0)} ${token0.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : 'USDC'}`
-                );
-              } else {
-                console.log(`    amount0=${amount0} (token0 ${token0})`);
-              }
+        //       if (
+        //         token0.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ||
+        //         token0.toLowerCase() === config.USDC_ADDRESS.toLowerCase()
+        //       ) {
+        //         console.log(
+        //           `    amount0=${formatAmount(token0, amount0)} ${token0.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : 'USDC'}`
+        //         );
+        //       } else {
+        //         console.log(`    amount0=${amount0} (token0 ${token0})`);
+        //       }
 
-              if (
-                token1.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ||
-                token1.toLowerCase() === config.USDC_ADDRESS.toLowerCase()
-              ) {
-                console.log(
-                  `    amount1=${formatAmount(token1, amount1)} ${token1.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : 'USDC'}`
-                );
-              } else {
-                console.log(`    amount1=${amount1} (token1 ${token1})`);
-              }
+        //       if (
+        //         token1.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ||
+        //         token1.toLowerCase() === config.USDC_ADDRESS.toLowerCase()
+        //       ) {
+        //         console.log(
+        //           `    amount1=${formatAmount(token1, amount1)} ${token1.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : 'USDC'}`
+        //         );
+        //       } else {
+        //         console.log(`    amount1=${amount1} (token1 ${token1})`);
+        //       }
 
-              console.log(`    tx=${ev2.transactionHash}`);
+        //       console.log(`    tx=${ev2.transactionHash}`);
 
-              // Send Telegram alert
-              const message =
-                `🔵 *Uniswap V3 Liquidity Added*\n` +
-                `Pool: \`${pool}\`\n` +
-                `Owner: \`${owner}\`\n` +
-                `Token0: ${token0.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : token0.toLowerCase() === config.USDC_ADDRESS.toLowerCase() ? 'USDC' : token0}\n` +
-                `Token1: ${token1.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : token1.toLowerCase() === config.USDC_ADDRESS.toLowerCase() ? 'USDC' : token1}\n` +
-                `Amount0: ${formatAmount(token0, amount0)}\n` +
-                `Amount1: ${formatAmount(token1, amount1)}\n` +
-                `TX: [View](https://basescan.org/tx/${ev2.transactionHash})`;
+        //       // Send Telegram alert
+        //       const message =
+        //         `🔵 *Uniswap V3 Liquidity Added*\n` +
+        //         `Pool: \`${pool}\`\n` +
+        //         `Owner: \`${owner}\`\n` +
+        //         `Token0: ${token0.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : token0.toLowerCase() === config.USDC_ADDRESS.toLowerCase() ? 'USDC' : token0}\n` +
+        //         `Token1: ${token1.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : token1.toLowerCase() === config.USDC_ADDRESS.toLowerCase() ? 'USDC' : token1}\n` +
+        //         `Amount0: ${formatAmount(token0, amount0)}\n` +
+        //         `Amount1: ${formatAmount(token1, amount1)}\n` +
+        //         `TX: [View](https://basescan.org/tx/${ev2.transactionHash})`;
 
-              telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, { parse_mode: 'Markdown' });
-            }
-          }
-        );
+        //       telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, { parse_mode: 'Markdown' });
+        //     }
+        //   }
+        // );
       } catch (error) {
         console.error(`Error processing V3 pool ${pool}:`, error);
       }

@@ -22,13 +22,18 @@ export { ethers };
 
 // Export ABIs
 export const erc20Abi = erc20AbiJson;
+export const uniswapV3FactoryAbi = uniswapV3FactoryAbiJson;
 export const uniswapV3PoolAbi = uniswapV3PoolAbiJson;
 export const uniswapV4PoolManagerAbi = uniswapV4PoolManagerAbiJson;
 export const zoraFactoryAbi = zoraFactoryAbiJson;
 
 // Initialize factory contracts
 export const factories = [
-  new ethers.Contract(config.UNISWAP_V2_FACTORY, uniswapV2FactoryAbiJson, BaseProviders.wsProvider),
+  new ethers.Contract(
+    config.UNISWAP_V2_FACTORY_ADDRESS,
+    uniswapV2FactoryAbiJson,
+    BaseProviders.wsProvider
+  ),
   new ethers.Contract(
     config.AERODROME_FACTORY,
     aerodromeFactoryAbiJson, // Aerodrome has different PairCreated signature (adds stable bool)
@@ -38,14 +43,14 @@ export const factories = [
 
 // Initialize Uniswap V3 factory contract
 export const uniswapV3Factory = new ethers.Contract(
-  config.UNISWAP_V3_FACTORY,
+  config.UNISWAP_V3_FACTORY_ADDRESS,
   uniswapV3FactoryAbiJson,
   BaseProviders.wsProvider
 );
 
 // Initialize Uniswap V4 pool manager contract
 export const uniswapV4PoolManager = new ethers.Contract(
-  config.UNISWAP_V4_POOL_MANAGER,
+  config.UNISWAP_V4_POOL_MANAGER_ADDRESS,
   uniswapV4PoolManagerAbiJson,
   BaseProviders.wsProvider
 );
