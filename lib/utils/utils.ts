@@ -78,6 +78,10 @@ export const commandList: ICommand[] = [
     description: 'Remove a wallet address from monitoring',
   },
   {
+    command: '/unlistenall',
+    description: 'Remove all monitored wallet addresses',
+  },
+  {
     command: '/wallets',
     description: 'Show all monitored wallet addresses',
   },

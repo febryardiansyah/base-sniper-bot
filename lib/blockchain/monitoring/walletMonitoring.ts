@@ -77,6 +77,23 @@ class WalletMonitoringService {
     return true;
   }
 
+  public clearAllWallets(): { removed: number; wasMonitoring: boolean } {
+    const removed = this.monitoredWallets.size;
+    const wasMonitoring = this.isMonitoring;
+    if (removed === 0) return { removed, wasMonitoring };
+    // Stop monitoring to cleanly remove listeners
+    if (wasMonitoring) {
+      this.stopMonitoring();
+    } else {
+      // Even if not monitoring, ensure any residual listeners are cleared
+      this.clearEventListeners();
+    }
+    this.monitoredWallets.clear();
+    stateService.set('walletAddresses', []);
+    console.log(`🧹 Cleared all monitored wallets (removed ${removed})`);
+    return { removed, wasMonitoring };
+  }
+
   public getMonitoredWallets(): string[] {
     return stateService.get<string[]>('walletAddresses') || [];
   }
