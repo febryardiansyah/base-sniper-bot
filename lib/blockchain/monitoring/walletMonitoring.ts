@@ -9,11 +9,11 @@ import {
   zeroPadValue,
 } from 'ethers';
 import { WalletTransactionData } from '../../interface/wallet.interface';
+import { isContractVerified } from '../../services/etherscan';
 import { stateService } from '../../services/state';
 import { telegramBot } from '../../telegram/telegram';
 import { config } from '../../utils/config';
 import { BaseProviders } from '../providers';
-import { isContractVerified } from '../../services/etherscan';
 
 class WalletMonitoringService {
   private isMonitoring = false;
@@ -456,34 +456,34 @@ class WalletMonitoringService {
       this.eventListeners.set(`transfer_to_${walletLower}`, () => {
         BaseProviders.wsProvider.off(transferToFilter, toListener);
       });
-      // 1155 single OUT
-      const erc1155FromSingle = { topics: [transferSingleTopic, null, addrTopic] };
-      const singleFromListener = (log: Log) => this.handleErc1155Transfer(log, 'OUT');
-      BaseProviders.wsProvider.on(erc1155FromSingle, singleFromListener);
-      this.eventListeners.set(`erc1155_single_from_${walletLower}`, () => {
-        BaseProviders.wsProvider.off(erc1155FromSingle, singleFromListener);
-      });
-      // 1155 single IN
-      const erc1155ToSingle = { topics: [transferSingleTopic, null, null, addrTopic] };
-      const singleToListener = (log: Log) => this.handleErc1155Transfer(log, 'IN');
-      BaseProviders.wsProvider.on(erc1155ToSingle, singleToListener);
-      this.eventListeners.set(`erc1155_single_to_${walletLower}`, () => {
-        BaseProviders.wsProvider.off(erc1155ToSingle, singleToListener);
-      });
-      // 1155 batch OUT
-      const erc1155FromBatch = { topics: [transferBatchTopic, null, addrTopic] };
-      const batchFromListener = (log: Log) => this.handleErc1155Transfer(log, 'OUT');
-      BaseProviders.wsProvider.on(erc1155FromBatch, batchFromListener);
-      this.eventListeners.set(`erc1155_batch_from_${walletLower}`, () => {
-        BaseProviders.wsProvider.off(erc1155FromBatch, batchFromListener);
-      });
-      // 1155 batch IN
-      const erc1155ToBatch = { topics: [transferBatchTopic, null, null, addrTopic] };
-      const batchToListener = (log: Log) => this.handleErc1155Transfer(log, 'IN');
-      BaseProviders.wsProvider.on(erc1155ToBatch, batchToListener);
-      this.eventListeners.set(`erc1155_batch_to_${walletLower}`, () => {
-        BaseProviders.wsProvider.off(erc1155ToBatch, batchToListener);
-      });
+      // // 1155 single OUT
+      // const erc1155FromSingle = { topics: [transferSingleTopic, null, addrTopic] };
+      // const singleFromListener = (log: Log) => this.handleErc1155Transfer(log, 'OUT');
+      // BaseProviders.wsProvider.on(erc1155FromSingle, singleFromListener);
+      // this.eventListeners.set(`erc1155_single_from_${walletLower}`, () => {
+      //   BaseProviders.wsProvider.off(erc1155FromSingle, singleFromListener);
+      // });
+      // // 1155 single IN
+      // const erc1155ToSingle = { topics: [transferSingleTopic, null, null, addrTopic] };
+      // const singleToListener = (log: Log) => this.handleErc1155Transfer(log, 'IN');
+      // BaseProviders.wsProvider.on(erc1155ToSingle, singleToListener);
+      // this.eventListeners.set(`erc1155_single_to_${walletLower}`, () => {
+      //   BaseProviders.wsProvider.off(erc1155ToSingle, singleToListener);
+      // });
+      // // 1155 batch OUT
+      // const erc1155FromBatch = { topics: [transferBatchTopic, null, addrTopic] };
+      // const batchFromListener = (log: Log) => this.handleErc1155Transfer(log, 'OUT');
+      // BaseProviders.wsProvider.on(erc1155FromBatch, batchFromListener);
+      // this.eventListeners.set(`erc1155_batch_from_${walletLower}`, () => {
+      //   BaseProviders.wsProvider.off(erc1155FromBatch, batchFromListener);
+      // });
+      // // 1155 batch IN
+      // const erc1155ToBatch = { topics: [transferBatchTopic, null, null, addrTopic] };
+      // const batchToListener = (log: Log) => this.handleErc1155Transfer(log, 'IN');
+      // BaseProviders.wsProvider.on(erc1155ToBatch, batchToListener);
+      // this.eventListeners.set(`erc1155_batch_to_${walletLower}`, () => {
+      //   BaseProviders.wsProvider.off(erc1155ToBatch, batchToListener);
+      // });
     } catch (e) {
       console.error('Failed to add listeners for wallet', walletLower, e);
     }
