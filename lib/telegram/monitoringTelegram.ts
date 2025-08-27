@@ -1,12 +1,12 @@
 import BigNumber from 'bignumber.js';
 import { BaseMonitoring } from '../blockchain/monitoring/monitoring';
 import { getNonWETHToken } from '../blockchain/pairAnalyzer';
-import { BigBuyData, PairInfo } from '../interface/types';
+import { BigBuyData, IPairInfo } from '../interface/types';
 import { config } from '../utils/config';
 import { telegramBot } from './telegram';
 
 // Send new pair alert
-export async function sendPairAlert(pairInfo: PairInfo, exchange: string): Promise<void> {
+export async function sendPairAlert(pairInfo: IPairInfo, exchange: string): Promise<void> {
   const nonWETHToken = getNonWETHToken(pairInfo);
   const now = new Date();
   const timestamp = now.toISOString().replace('T', ' ').replace('Z', ' UTC');
