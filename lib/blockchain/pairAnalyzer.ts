@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { BaseContracts } from '../contracts/contracts';
-import { ITokenInfo, PairInfo } from '../interface/types';
+import { IPairInfo, ITokenInfo } from '../interface/types';
 import { checkTokenInfo } from '../services/info';
 import { config } from '../utils/config';
 
@@ -8,10 +8,11 @@ import { config } from '../utils/config';
 export async function analyzePair(
   pairAddress: string,
   token0Address: string,
-  token1Address: string
-): Promise<PairInfo | null> {
+  token1Address: string,
+  uniswapVersion: number = 2
+): Promise<IPairInfo | null> {
   try {
-    const pairContract = BaseContracts.createPairContract(pairAddress);
+    const pairContract = BaseContracts.createPairContract(pairAddress, uniswapVersion);
 
     // Get token information
     const [token0Info, token1Info] = await Promise.all([
@@ -23,26 +24,26 @@ export async function analyzePair(
       return null;
     }
 
-    // Get reserves
-    const reserves = await pairContract.getReserves();
-    const reserve0 = reserves[0].toString();
-    const reserve1 = reserves[1].toString();
-
     // Calculate ETH liquidity
     let liquidityETH = 0;
 
-    if (token0Address.toLowerCase() === config.WETH_ADDRESS) {
-      liquidityETH = parseFloat(ethers.formatEther(reserve0));
-    } else if (token1Address.toLowerCase() === config.WETH_ADDRESS) {
-      liquidityETH = parseFloat(ethers.formatEther(reserve1));
+    // Get reserves for Uniswap V2
+    if (uniswapVersion === 2) {
+      const reserves = await pairContract.getReserves();
+      const reserve0 = reserves[0].toString();
+      const reserve1 = reserves[1].toString();
+
+      if (token0Address.toLowerCase() === config.WETH_ADDRESS) {
+        liquidityETH = parseFloat(ethers.formatEther(reserve0));
+      } else if (token1Address.toLowerCase() === config.WETH_ADDRESS) {
+        liquidityETH = parseFloat(ethers.formatEther(reserve1));
+      }
     }
 
     return {
       pairAddress,
       token0: token0Info,
       token1: token1Info,
-      reserve0,
-      reserve1,
       liquidityETH,
     };
   } catch (error) {
@@ -52,7 +53,7 @@ export async function analyzePair(
 }
 
 // Check if pair should trigger an alert
-export function shouldAlert(pairInfo: PairInfo): boolean {
+export function shouldAlert(pairInfo: IPairInfo): boolean {
   return (
     pairInfo.liquidityETH > config.MIN_LIQUIDITY_ETH &&
     pairInfo.liquidityETH < config.MAX_LIQUIDITY_ETH
@@ -81,7 +82,7 @@ export function shouldAlert(pairInfo: PairInfo): boolean {
 }
 
 // Get non-WETH token from pair
-export function getNonWETHToken(pairInfo: PairInfo): ITokenInfo {
+export function getNonWETHToken(pairInfo: IPairInfo): ITokenInfo {
   return pairInfo.token0.address.toLowerCase() === config.WETH_ADDRESS
     ? pairInfo.token1
     : pairInfo.token0;

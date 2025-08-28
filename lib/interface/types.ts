@@ -1,12 +1,11 @@
 // Pair information interface
-export interface PairInfo {
+export interface IPairInfo {
   pairAddress: string;
   token0: ITokenInfo;
   token1: ITokenInfo;
-  reserve0: string;
-  reserve1: string;
+  // reserve0: string;
+  // reserve1: string;
   liquidityETH: number;
-  // Optional verification flags (true = verified source code on explorer)
   token0Verified?: boolean;
   token1Verified?: boolean;
 }

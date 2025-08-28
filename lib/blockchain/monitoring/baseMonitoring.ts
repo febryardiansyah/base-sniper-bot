@@ -10,30 +10,9 @@ import { sleep } from '../../utils/utils';
 import { analyzePair, shouldAlert } from '../pairAnalyzer';
 import { BaseProviders } from '../providers';
 
-// Constants for thresholds
-const MIN_ETH = ethers.parseEther('5'); // 5 ETH
-const MIN_USDC = ethers.parseUnits('20000', 6); // 20,000 USDC (6 decimals)
-
-// Helper functions for V3 and V4 monitoring
-function meetsThreshold(tokenAddr: string, rawAmount: bigint): boolean {
-  const a = rawAmount >= 0n ? rawAmount : -rawAmount; // V4 emits int256 (positive for add)
-  if (tokenAddr.toLowerCase() === config.WETH_ADDRESS.toLowerCase()) return a >= MIN_ETH;
-  if (tokenAddr.toLowerCase() === config.USDC_ADDRESS.toLowerCase()) return a >= MIN_USDC;
-  return false;
-}
-
-function formatAmount(tokenAddr: string, rawAmount: bigint): string {
-  const a = rawAmount >= 0n ? rawAmount : -rawAmount;
-  const decimals = tokenAddr.toLowerCase() === config.USDC_ADDRESS.toLowerCase() ? 6 : 18;
-  return ethers.formatUnits(a, decimals);
-}
-
-// Tracked pairs and transactions to avoid duplicates
-const trackedPairs = new Set<string>();
+const trackedPairsUniswapV2 = new Set<string>();
+const trackedPairsUniswapV3 = new Set<string>();
 const trackedTransactions = new Set<string>();
-
-// Map to track Uniswap V4 pool IDs to their currencies
-const idToCurrencies = new Map<string, { currency0: string; currency1: string }>();
 
 let isMonitoring = false;
 
@@ -117,8 +96,8 @@ async function monitorNewPairs(): Promise<void> {
       ) {
         console.log(`   • Type: ${extra.stable ? 'Stable' : 'Volatile'}`);
       }
-      if (trackedPairs.has(pairAddress.toLowerCase())) return;
-      trackedPairs.add(pairAddress.toLowerCase());
+      if (trackedPairsUniswapV2.has(pairAddress.toLowerCase())) return;
+      trackedPairsUniswapV2.add(pairAddress.toLowerCase());
       await sleep(config.RETRY_DELAY_MS * config.BLOCK_CONFIRMATION_COUNT);
       const pairInfo = await analyzePair(pairAddress, token0, token1);
       if (!pairInfo) return;
@@ -171,14 +150,6 @@ async function monitorNewPairs(): Promise<void> {
       // event: ethers.EventLog
     ) => {
       console.log(`🟦 New V3 pool detected: ${pool}`);
-      console.log(`
-    ✅ [V3] New Pool Confirmed!
-    -----------------------------------------
-    Pool Address: ${pool}
-    Tokens: ${token0}, ${token1}
-    Fee: ${fee}
-    -----------------------------------------
-  `);
       try {
         const poolContract = BaseContracts.createPairContract(pool, 3);
 
@@ -189,15 +160,6 @@ async function monitorNewPairs(): Promise<void> {
           poolContract.slot0(),
           poolContract.liquidity(),
         ]);
-
-        const [token0Info, token1Info] = await Promise.all([
-          checkTokenInfo(token0Addr),
-          checkTokenInfo(token1Addr),
-        ]);
-
-        console.log(
-          `🟦 Listening for liquidity additions on V3 pool: ${token0Info?.symbol}/${token1Info?.symbol} liquidity: ${ethers.formatEther(liquidityActive)}`
-        );
 
         poolContract.on(
           'Mint',
@@ -211,75 +173,27 @@ async function monitorNewPairs(): Promise<void> {
             amount1: bigint,
             ev2: ethers.EventLog
           ) => {
-            console.log(`\n🟦 [V3] Mint  pool=${pool} owner=${owner}`);
-            // Send Telegram alert
-            const message =
-              `🔵 *Uniswap V3 Liquidity Added*\n` +
-              `Pool: \`${pool}\`\n` +
-              `Owner: \`${owner}\`\n` +
-              `Token0: ${token0.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : token0.toLowerCase() === config.USDC_ADDRESS.toLowerCase() ? 'USDC' : token0}\n` +
-              `Token1: ${token1.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : token1.toLowerCase() === config.USDC_ADDRESS.toLowerCase() ? 'USDC' : token1}\n` +
-              `Amount0: ${formatAmount(token0, amount0)}\n` +
-              `Amount1: ${formatAmount(token1, amount1)}\n` +
-              `TX: [View](https://basescan.org/tx/${ev2.transactionHash})`;
+            if (trackedPairsUniswapV3.has(pool.toLowerCase())) return;
+            trackedPairsUniswapV3.add(pool.toLowerCase());
 
-            telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, { parse_mode: 'Markdown' });
-            // Check thresholds on either side if token matches WETH/USDC
-            // let hit = false;
-            // if (
-            //   token0.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ||
-            //   token0.toLowerCase() === config.USDC_ADDRESS.toLowerCase()
-            // ) {
-            //   if (meetsThreshold(token0, amount0)) hit = true;
-            // }
-            // if (
-            //   token1.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ||
-            //   token1.toLowerCase() === config.USDC_ADDRESS.toLowerCase()
-            // ) {
-            //   if (meetsThreshold(token1, amount1)) hit = true;
-            // }
+            const pairInfo = await analyzePair(pool, token0Addr, token1Addr, 3);
+            console.log(`🟦 [V3] Mint pairInfo:`, { ...pairInfo });
+            if (!pairInfo) return;
 
-            // if (hit) {
-            //   console.log('✅ [V3] Mint meets threshold');
-            //   console.log(`    pool=${pool} owner=${owner}`);
+            let liquidityETH = 0;
+            if (token0.toLowerCase() === config.WETH_ADDRESS) {
+              liquidityETH = parseFloat(ethers.formatEther(amount0));
+            } else if (token1.toLowerCase() === config.WETH_ADDRESS) {
+              liquidityETH = parseFloat(ethers.formatEther(amount1));
+            }
 
-            //   if (
-            //     token0.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ||
-            //     token0.toLowerCase() === config.USDC_ADDRESS.toLowerCase()
-            //   ) {
-            //     console.log(
-            //       `    amount0=${formatAmount(token0, amount0)} ${token0.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : 'USDC'}`
-            //     );
-            //   } else {
-            //     console.log(`    amount0=${amount0} (token0 ${token0})`);
-            //   }
-
-            //   if (
-            //     token1.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ||
-            //     token1.toLowerCase() === config.USDC_ADDRESS.toLowerCase()
-            //   ) {
-            //     console.log(
-            //       `    amount1=${formatAmount(token1, amount1)} ${token1.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : 'USDC'}`
-            //     );
-            //   } else {
-            //     console.log(`    amount1=${amount1} (token1 ${token1})`);
-            //   }
-
-            //   console.log(`    tx=${ev2.transactionHash}`);
-
-            //   // Send Telegram alert
-            //   const message =
-            //     `🔵 *Uniswap V3 Liquidity Added*\n` +
-            //     `Pool: \`${pool}\`\n` +
-            //     `Owner: \`${owner}\`\n` +
-            //     `Token0: ${token0.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : token0.toLowerCase() === config.USDC_ADDRESS.toLowerCase() ? 'USDC' : token0}\n` +
-            //     `Token1: ${token1.toLowerCase() === config.WETH_ADDRESS.toLowerCase() ? 'WETH' : token1.toLowerCase() === config.USDC_ADDRESS.toLowerCase() ? 'USDC' : token1}\n` +
-            //     `Amount0: ${formatAmount(token0, amount0)}\n` +
-            //     `Amount1: ${formatAmount(token1, amount1)}\n` +
-            //     `TX: [View](https://basescan.org/tx/${ev2.transactionHash})`;
-
-            //   telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, { parse_mode: 'Markdown' });
-            // }
+            if (amount0 > 0 && amount1 > 0) {
+              console.log(
+                `🟦 [V3] New token alert: ${pairInfo.token0.symbol}/${pairInfo.token1.symbol}`
+              );
+              pairInfo.liquidityETH = liquidityETH;
+              await MonitoringTelegram.sendPairAlert(pairInfo, 'Uniswap V3');
+            }
           }
         );
       } catch (error) {
