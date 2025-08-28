@@ -9,8 +9,8 @@ import {
   zeroPadValue,
 } from 'ethers';
 import { WalletTransactionData } from '../../interface/wallet.interface';
-import { isContractVerified } from '../../services/etherscan';
-import { stateService } from '../../services/state';
+import { isContractVerified } from '../../services/etherscan.service';
+import { stateService } from '../../services/state.service';
 import { telegramBot } from '../../telegram/telegram';
 import { config } from '../../utils/config';
 import { BaseProviders } from '../providers';

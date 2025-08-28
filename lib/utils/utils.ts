@@ -41,18 +41,7 @@ export const commandList: ICommand[] = [
     command: '/myinfo',
     description: 'Check your wallet address and balance info',
   },
-  {
-    command: '/chain',
-    description: 'Show current blockchain network',
-  },
-  {
-    command: '/chainlist',
-    description: 'Show list of supported blockchain networks',
-  },
-  {
-    command: '/setchain <name>',
-    description: 'Switch to a different blockchain network',
-  },
+  // Chain management commands removed (Base-only)
   {
     command: '/blacklist',
     description: 'Show all blacklisted tokens',

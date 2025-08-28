@@ -1,5 +1,5 @@
 import * as ethers from 'ethers';
-import { BaseProviders } from '../blockchain/providers';
+import { BaseProviders } from './providers';
 import { config } from '../utils/config';
 
 // Import ABIs
@@ -28,18 +28,11 @@ export const uniswapV4PoolManagerAbi = uniswapV4PoolManagerAbiJson;
 export const zoraFactoryAbi = zoraFactoryAbiJson;
 
 // Initialize factory contracts
-export const factories = [
-  new ethers.Contract(
-    config.UNISWAP_V2_FACTORY_ADDRESS,
-    uniswapV2FactoryAbiJson,
-    BaseProviders.wsProvider
-  ),
-  new ethers.Contract(
-    config.AERODROME_FACTORY,
-    aerodromeFactoryAbiJson, // Aerodrome has different PairCreated signature (adds stable bool)
-    BaseProviders.wsProvider
-  ),
-];
+export const uniswapV2Factory = new ethers.Contract(
+  config.AERODROME_FACTORY,
+  aerodromeFactoryAbiJson,
+  BaseProviders.wsProvider
+);
 
 // Initialize Uniswap V3 factory contract
 export const uniswapV3Factory = new ethers.Contract(

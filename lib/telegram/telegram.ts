@@ -1,5 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
-import { checkAddressInfo } from '../services/info';
+import { checkAddressInfo } from '../services/info.service';
 import { BlacklistUtils } from '../utils/blacklistUtils';
 import { config } from '../utils/config';
 import { commandList } from '../utils/utils';

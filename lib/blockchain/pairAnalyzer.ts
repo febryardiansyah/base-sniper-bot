@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
-import { BaseContracts } from '../contracts/contracts';
-import { IPairInfo, ITokenInfo } from '../interface/types';
-import { checkTokenInfo } from '../services/info';
+import * as BaseContracts from './contracts';
+import { IPairInfo, ITokenInfo } from '../interface/token.interface';
+import { checkTokenInfo } from '../services/info.service';
 import { config } from '../utils/config';
 
 // Analyze pair for liquidity and token information

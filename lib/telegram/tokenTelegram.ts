@@ -1,10 +1,9 @@
 import { ethers } from 'ethers';
-import { buyTokenWithRelayRouter, sellTokenWithRelayRouter } from '../services/relayRouterSwap';
-import { buyTokenWithETH, sellTokenForETH } from '../services/swap';
+import { buyTokenWithRelayRouter, sellTokenWithRelayRouter } from '../services/relay.service';
 import { config } from '../utils/config';
 import { telegramBot } from './telegram';
-import { checkUserTokenInfo } from '../services/info';
-import { stateService } from '../services/state';
+import { checkUserTokenInfo } from '../services/info.service';
+import { stateService } from '../services/state.service';
 
 export function commandHandlers(): void {
   // Handle /swap command
@@ -78,35 +77,19 @@ export function commandHandlers(): void {
       );
 
       // Execute the swap using Relay Router
-      let buyResult = await buyTokenWithRelayRouter(tokenAddress, ethAmount, slippage);
+      const buyResult = await buyTokenWithRelayRouter(tokenAddress, ethAmount, slippage);
 
-      // If Relay Router fails, fall back to traditional swap
-      if (!buyResult) {
-        console.log('⚠️ Relay Router swap failed, falling back to traditional swap...');
-        buyResult = await buyTokenWithETH(tokenAddress, ethAmount);
-        if (buyResult) {
-          await telegramBot.sendMessage(
-            chatId,
-            '⚠️ Relay Router swap failed, used traditional swap instead.'
-          );
+      await telegramBot.sendMessage(
+        chatId,
+        `✅ *Swap transaction submitted! Tx Hash*: \`${buyResult.txHash}\n\n\`` +
+          `📊 *Purchased* : ${ethers.formatUnits(
+            buyResult.tokenInfo.balance.toString(),
+            buyResult.tokenInfo.decimals
+          )} *${buyResult.tokenInfo.symbol}*`,
+        {
+          parse_mode: 'Markdown',
         }
-      }
-
-      if (buyResult) {
-        await telegramBot.sendMessage(
-          chatId,
-          `✅ *Swap transaction submitted! Tx Hash*: \`${buyResult.txHash}\n\n\`` +
-            `📊 *Purchased* : ${ethers.formatUnits(
-              buyResult.tokenInfo.balance.toString(),
-              buyResult.tokenInfo.decimals
-            )} *${buyResult.tokenInfo.symbol}*`,
-          {
-            parse_mode: 'Markdown',
-          }
-        );
-      } else {
-        await telegramBot.sendMessage(chatId, '❌ Swap failed. Check console logs for details.');
-      }
+      );
     } catch (error) {
       console.error('Error handling swap command:', error);
       try {
@@ -200,35 +183,19 @@ export function commandHandlers(): void {
       );
 
       // Execute the swap using Relay Router
-      let sellResult = await sellTokenWithRelayRouter(tokenAddress, tokenAmount, slippage);
+      const sellResult = await sellTokenWithRelayRouter(tokenAddress, tokenAmount, slippage);
 
-      // If Relay Router fails, fall back to traditional swap
-      if (!sellResult) {
-        console.log('⚠️ Relay Router swap failed, falling back to traditional swap...');
-        sellResult = await sellTokenForETH(tokenAddress, tokenAmount, routerIndex);
-        if (sellResult) {
-          await telegramBot.sendMessage(
-            chatId,
-            '⚠️ Relay Router swap failed, used traditional swap instead.'
-          );
+      await telegramBot.sendMessage(
+        chatId,
+        `✅ *Sell transaction submitted! Tx Hash*: \`${sellResult.txHash}\`\n\n` +
+          `💰 *Remaining* : ${ethers.formatUnits(
+            sellResult.tokenInfo.balance.toString(),
+            sellResult.tokenInfo.decimals
+          )} *${sellResult.tokenInfo.symbol}*`,
+        {
+          parse_mode: 'Markdown',
         }
-      }
-
-      if (sellResult) {
-        await telegramBot.sendMessage(
-          chatId,
-          `✅ *Sell transaction submitted! Tx Hash*: \`${sellResult.txHash}\`\n\n` +
-            `💰 *Remaining* : ${ethers.formatUnits(
-              sellResult.tokenInfo.balance.toString(),
-              sellResult.tokenInfo.decimals
-            )} *${sellResult.tokenInfo.symbol}*`,
-          {
-            parse_mode: 'Markdown',
-          }
-        );
-      } else {
-        await telegramBot.sendMessage(chatId, '❌ Sell failed. Check console logs for details.');
-      }
+      );
     } catch (error) {
       console.error('Error handling sell command:', error);
       try {
@@ -266,75 +233,6 @@ export function commandHandlers(): void {
       );
     } catch (error) {
       await telegramBot.sendMessage(chatId, `Error checking token balance: ${error}`);
-    }
-  });
-
-  telegramBot.onText(/\/chain/, async msg => {
-    const chatId = msg.chat.id;
-
-    // Check if the chat ID matches the configured chat ID
-    if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
-      await telegramBot.sendMessage(chatId, '⛔ Unauthorized access');
-      return;
-    }
-
-    // Stop monitoring
-    const chain = stateService.getConfig().current_chain;
-    await telegramBot.sendMessage(chatId, `⛓️ Current chain: *${chain}*`, {
-      parse_mode: 'Markdown',
-    });
-  });
-
-  telegramBot.onText(/\/chainlist/, async msg => {
-    const chatId = msg.chat.id;
-
-    // Check if the chat ID matches the configured chat ID
-    if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
-      await telegramBot.sendMessage(chatId, '⛔ Unauthorized access');
-      return;
-    }
-
-    // Get the list of supported chains
-    const supportedChains = stateService.getConfig().chains || [];
-    await telegramBot.sendMessage(chatId, `⛓️ Supported chains: *${supportedChains.join(', ')}*`, {
-      parse_mode: 'Markdown',
-    });
-  });
-
-  telegramBot.onText(/\/setchain (.+)/, async (msg, match) => {
-    const chatId = msg.chat.id;
-
-    // Check if the chat ID matches the configured chat ID
-    if (chatId.toString() !== config.TELEGRAM_CHAT_ID) {
-      await telegramBot.sendMessage(chatId, '⛔ Unauthorized access');
-      return;
-    }
-
-    const chainName = (match ?? '')[1].trim();
-    const supportedChains = stateService.getConfig().chains || [];
-
-    if (!supportedChains.map(chain => chain.toLowerCase()).includes(chainName.toLowerCase())) {
-      await telegramBot.sendMessage(
-        chatId,
-        `❌ Invalid chain name. Supported chains are: *${supportedChains.join(', ')}*`,
-        { parse_mode: 'Markdown' }
-      );
-      return;
-    }
-
-    try {
-      const currentChain = supportedChains.find(
-        chain => chain.toLowerCase() === chainName.toLowerCase()
-      );
-      stateService.update({
-        current_chain: currentChain,
-      });
-      await telegramBot.sendMessage(chatId, `✅ Chain changed to *${currentChain}*`, {
-        parse_mode: 'Markdown',
-      });
-    } catch (error) {
-      console.error('Error changing chain:', error);
-      await telegramBot.sendMessage(chatId, `❌ Failed to change chain: ${error}`);
     }
   });
 }

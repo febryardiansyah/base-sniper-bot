@@ -1,8 +1,7 @@
 {
     "current_chain": "Base",
     "chains": [
-        "Base",
-        "Solana"
+        "Base"
     ],
     "tokenBlacklist": [
         "BabyBlaze",

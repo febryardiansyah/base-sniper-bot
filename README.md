@@ -1,6 +1,6 @@
 # Febry's Defi Bot 🎯
 
-A powerful TypeScript bot that monitors the Base blockchain for new token launches with high liquidity and sends real-time alerts to Telegram. Perfect for identifying early investment opportunities and tracking large transactions.
+A powerful TypeScript bot that monitors the Base blockchain for new token launches with high liquidity and sends real-time alerts to Telegram. (Project refactored to be Base-only; prior Solana expansion plan removed.)
 
 ## Features 🚀
 
@@ -149,8 +149,8 @@ BlacklistUtils.removeFromBlacklist('LEGITIMATE_TOKEN');
 The blacklist is stored in your state files (`state.json` / `state-dev.json`):
 ```json
 {
-  "current_chain": "Base",
-  "chains": ["Base", "Solana"],
+   "current_chain": "Base",
+   "chains": ["Base"],
   "tokenBlacklist": [
     "BabyBlaze",
     "BIGBALZ",
@@ -298,8 +298,7 @@ The bot supports the following Telegram commands:
 - `/myinfo` - Check your wallet address and balance info
 
 - `/chain` - Show current blockchain network
-- `/chainlist` - Show list of supported blockchain networks  
-- `/setchain <chain_name>` - Switch to a different blockchain network
+- (Multi-chain commands removed; bot is now Base-only)
 
 #### Token Blacklist Commands 🆕
 - `/blacklist` - Show all blacklisted tokens

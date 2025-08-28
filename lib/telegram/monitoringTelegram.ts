@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js';
 import { BaseMonitoring } from '../blockchain/monitoring/monitoring';
 import { getNonWETHToken } from '../blockchain/pairAnalyzer';
-import { BigBuyData, IPairInfo } from '../interface/types';
+import { IPairInfo } from '../interface/token.interface';
 import { config } from '../utils/config';
 import { telegramBot } from './telegram';
 
@@ -43,32 +43,6 @@ export async function sendPairAlert(pairInfo: IPairInfo, exchange: string): Prom
       nonWETHToken.symbol
     } with ${pairInfo.liquidityETH.toFixed(2)} ETH liquidity`
   );
-}
-
-// Send big buy alert
-export async function sendBuyAlert(data: BigBuyData): Promise<void> {
-  const tokenSymbol = data.tokenInfo?.symbol || 'Unknown';
-  const tokenAddress = data.tokenInfo?.address || 'Unknown';
-
-  const message =
-    `🔥 *BIG BUY DETECTED ON BASE*\n\n` +
-    `👤 Buyer: \`${data.sender}\`\n` +
-    `💰 Amount: *${data.ethAmount.toFixed(4)} ETH*\n` +
-    `🪙 Token: *${tokenSymbol}*\n` +
-    `📍 Token Address: \`${tokenAddress}\`\n` +
-    `🏪 Router: *${data.routerName}*\n` +
-    `🔗 TX: \`${data.txHash}\`\n\n` +
-    `💡 *Someone just made a big purchase!*`;
-
-  try {
-    await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true,
-    });
-  } catch (error) {
-    console.error('Error sending Telegram message:', error);
-  }
-  console.log(`🔥 BIG BUY: ${data.ethAmount.toFixed(4)} ETH spent on ${tokenSymbol}`);
 }
 
 export function commandHandlers(): void {

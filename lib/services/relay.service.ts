@@ -2,8 +2,12 @@ import { ethers } from 'ethers';
 import axios from 'axios';
 import { config } from '../utils/config';
 import { BaseProviders } from '../blockchain/providers';
-import { IRelayQuoteResponse, IRelaySwapStatusResponse, ISwapResult } from '../interface/types';
-import { checkUserTokenInfo } from './info';
+import {
+  IRelayQuoteResponse,
+  IRelaySwapStatusResponse,
+  ISwapResult,
+} from '../interface/relay.interface';
+import { checkUserTokenInfo } from './info.service';
 
 // Constants
 const RELAY_API_URL = 'https://api.relay.link';
@@ -233,7 +237,7 @@ export async function buyTokenWithRelayRouter(
   tokenAddress: string,
   ethAmount: number,
   slippagePercent: number = 5
-): Promise<ISwapResult | null> {
+): Promise<ISwapResult> {
   try {
     if (!config.WALLET_PRIVATE_KEY) {
       console.error('❌ No wallet private key provided for relay swap');
@@ -267,9 +271,9 @@ export async function buyTokenWithRelayRouter(
       txHash,
       tokenInfo,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Error executing relay swap:', error);
-    return null;
+    throw error;
   }
 }
 
@@ -277,7 +281,7 @@ export async function sellTokenWithRelayRouter(
   tokenAddress: string,
   tokenAmount: string,
   slippagePercent: number = 5
-): Promise<ISwapResult | null> {
+): Promise<ISwapResult> {
   try {
     if (!config.WALLET_PRIVATE_KEY) {
       console.error('❌ No wallet private key provided for relay swap');
@@ -354,9 +358,9 @@ export async function sellTokenWithRelayRouter(
       txHash,
       tokenInfo: updatedTokenInfo,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Error executing relay swap:', error);
-    return null;
+    throw error;
   }
 }
 

@@ -1,8 +1,6 @@
 import { ethers } from 'ethers';
-import { BaseContracts } from '../../contracts/contracts';
-import { BigBuyData } from '../../interface/types';
-import { isContractVerified } from '../../services/etherscan';
-import { checkTokenInfo } from '../../services/info';
+import * as BaseContracts from '../contracts';
+import { isContractVerified } from '../../services/etherscan.service';
 import { MonitoringTelegram, telegramBot } from '../../telegram/telegram';
 import { BlacklistUtils } from '../../utils/blacklistUtils';
 import { config } from '../../utils/config';
@@ -12,7 +10,6 @@ import { BaseProviders } from '../providers';
 
 const trackedPairsUniswapV2 = new Set<string>();
 const trackedPairsUniswapV3 = new Set<string>();
-const trackedTransactions = new Set<string>();
 
 let isMonitoring = false;
 
@@ -36,119 +33,60 @@ async function onCoinCreated(
 // Monitor new pair creation events
 async function monitorNewPairs(): Promise<void> {
   // Monitor Uniswap V2 and Aerodrome pairs
-  BaseContracts.factories.forEach((factory, index) => {
-    const factoryName = BaseContracts.factoryNames[index];
-    const isAerodrome = factoryName.toLowerCase().includes('aerodrome');
+  BaseContracts.uniswapV2Factory.on(
+    'PairCreated',
+    async (token0: string, token1: string, pairAddress: string, pairIndex: bigint) => {
+      try {
+        console.log(`🆕 New pair detected on Uniswap V2: ${pairAddress}`);
 
-    if (isAerodrome) {
-      // Aerodrome signature: PoolCreated(address token0, address token1, bool stable, address pool, uint256)
-      // factory.on(
-      //   'PoolCreated',
-      //   async (
-      //     token0: string,
-      //     token1: string,
-      //     stable: boolean,
-      //     poolAddress: string,
-      //     poolIndex: bigint
-      //   ) => {
-      //     await handleNewPair({
-      //       token0,
-      //       token1,
-      //       pairAddress: poolAddress,
-      //       factoryName,
-      //       extra: { stable, poolIndex },
-      //     });
-      //   }
-      // );
-    } else {
-      // Uniswap V2 signature: PairCreated(address token0, address token1, address pair, uint256)
-      factory.on(
-        'PairCreated',
-        async (token0: string, token1: string, pairAddress: string, pairIndex: bigint) => {
-          await handleNewPair({
-            token0,
-            token1,
-            pairAddress,
-            factoryName,
-            extra: { pairIndex },
-          });
+        if (trackedPairsUniswapV2.has(pairAddress.toLowerCase())) return;
+        trackedPairsUniswapV2.add(pairAddress.toLowerCase());
+
+        await sleep(config.RETRY_DELAY_MS * config.BLOCK_CONFIRMATION_COUNT);
+
+        const pairInfo = await analyzePair(pairAddress, token0, token1);
+
+        if (!pairInfo) return;
+
+        const isShouldAlert = shouldAlert(pairInfo);
+        const isBlackListed =
+          BlacklistUtils.isBlacklisted(pairInfo.token0.symbol) ||
+          BlacklistUtils.isBlacklisted(pairInfo.token1.symbol);
+
+        if (isShouldAlert && !isBlackListed) {
+          const lowerWeth = config.WETH_ADDRESS.toLowerCase();
+          const verificationPromises: Promise<void>[] = [];
+
+          if (pairInfo.token0.address.toLowerCase() !== lowerWeth) {
+            verificationPromises.push(
+              (async () => {
+                pairInfo.token0Verified = await isContractVerified(pairInfo.token0.address);
+              })()
+            );
+          }
+
+          if (pairInfo.token1.address.toLowerCase() !== lowerWeth) {
+            verificationPromises.push(
+              (async () => {
+                pairInfo.token1Verified = await isContractVerified(pairInfo.token1.address);
+              })()
+            );
+          }
+
+          if (verificationPromises.length) await Promise.all(verificationPromises);
+
+          await MonitoringTelegram.sendPairAlert(pairInfo, 'Uniswap V2');
         }
-      );
-    }
-  });
-
-  interface NewPairParams {
-    token0: string;
-    token1: string;
-    pairAddress: string;
-    factoryName: string;
-    extra?: Record<string, unknown>;
-  }
-
-  async function handleNewPair(params: NewPairParams) {
-    const { token0, token1, pairAddress, factoryName, extra } = params;
-    try {
-      console.log(`🆕 New pair detected on ${factoryName}: ${pairAddress}`);
-      if (
-        factoryName.toLowerCase().includes('aerodrome') &&
-        extra &&
-        typeof (extra as Record<string, unknown>).stable === 'boolean'
-      ) {
-        console.log(`   • Type: ${extra.stable ? 'Stable' : 'Volatile'}`);
+      } catch (error) {
+        console.error(`Error processing new pair ${pairAddress}:`, error);
       }
-      if (trackedPairsUniswapV2.has(pairAddress.toLowerCase())) return;
-      trackedPairsUniswapV2.add(pairAddress.toLowerCase());
-      await sleep(config.RETRY_DELAY_MS * config.BLOCK_CONFIRMATION_COUNT);
-      const pairInfo = await analyzePair(pairAddress, token0, token1);
-      if (!pairInfo) return;
-      const isShouldAlert = shouldAlert(pairInfo);
-      const isBlackListed =
-        BlacklistUtils.isBlacklisted(pairInfo.token0.symbol) ||
-        BlacklistUtils.isBlacklisted(pairInfo.token1.symbol);
-      if (isShouldAlert && !isBlackListed) {
-        const lowerWeth = config.WETH_ADDRESS.toLowerCase();
-        const verificationPromises: Promise<void>[] = [];
-        if (pairInfo.token0.address.toLowerCase() !== lowerWeth) {
-          verificationPromises.push(
-            (async () => {
-              pairInfo.token0Verified = await isContractVerified(pairInfo.token0.address);
-            })()
-          );
-        }
-        if (pairInfo.token1.address.toLowerCase() !== lowerWeth) {
-          verificationPromises.push(
-            (async () => {
-              pairInfo.token1Verified = await isContractVerified(pairInfo.token1.address);
-            })()
-          );
-        }
-        if (verificationPromises.length) await Promise.all(verificationPromises);
-        // Append stable/volatile info for Aerodrome pools
-        if (
-          factoryName.toLowerCase().includes('aerodrome') &&
-          extra &&
-          typeof (extra as Record<string, unknown>).stable === 'boolean'
-        ) {
-          pairInfo.pairAddress = `${pairInfo.pairAddress} (${extra.stable ? 'Stable' : 'Volatile'})`;
-        }
-        await MonitoringTelegram.sendPairAlert(pairInfo, factoryName);
-      }
-    } catch (error) {
-      console.error(`Error processing new pair ${pairAddress}:`, error);
     }
-  }
+  );
 
   // Monitor Uniswap V3 pools
   BaseContracts.uniswapV3Factory.on(
     'PoolCreated',
-    async (
-      token0: string,
-      token1: string,
-      fee: number,
-      tickSpacing: number,
-      pool: string
-      // event: ethers.EventLog
-    ) => {
+    async (token0: string, token1: string, fee: number, tickSpacing: number, pool: string) => {
       console.log(`🟦 New V3 pool detected: ${pool}`);
       try {
         const poolContract = BaseContracts.createPairContract(pool, 3);
@@ -339,10 +277,8 @@ async function monitorNewPairs(): Promise<void> {
   // BaseContracts.zoraFactory.on('CreatorCoinCreated', onCoinCreated);
 }
 function stopMonitorNewPairs(): void {
-  BaseContracts.factories.forEach(factory => {
-    factory.off('PairCreated');
-    factory.removeAllListeners();
-  });
+  BaseContracts.uniswapV2Factory.off('PairCreated');
+  BaseContracts.uniswapV2Factory.removeAllListeners();
 
   BaseContracts.zoraFactory.off('CoinCreatedV4', onCoinCreated);
   BaseContracts.zoraFactory.off('CreatorCoinCreated', onCoinCreated);
@@ -355,64 +291,6 @@ function stopMonitorNewPairs(): void {
   BaseContracts.uniswapV4PoolManager.removeAllListeners();
 }
 
-// Monitor big buy events on routers
-function monitorBigBuys(): void {
-  BaseContracts.routers.forEach((router, index) => {
-    const routerName = BaseContracts.routerNames[index];
-
-    router.on(
-      'Swap',
-      async (
-        sender: string,
-        amountIn: bigint,
-        amountOutMin: bigint,
-        path: string[],
-        to: string,
-        event: ethers.EventLog
-      ) => {
-        try {
-          const txHash = event.transactionHash;
-
-          if (trackedTransactions.has(txHash)) {
-            return;
-          }
-
-          trackedTransactions.add(txHash);
-
-          if (!Array.isArray(path) || path.length < 2) return;
-
-          const inputToken = path[0].toLowerCase();
-          const outputToken = path[path.length - 1].toLowerCase();
-
-          // Check if buying with ETH
-          if (inputToken === config.WETH_ADDRESS) {
-            const ethAmount = parseFloat(ethers.formatEther(amountIn));
-
-            if (ethAmount >= config.BIG_BUY_THRESHOLD) {
-              const tokenInfo = await checkTokenInfo(outputToken);
-              const buyData: BigBuyData = {
-                sender,
-                ethAmount,
-                tokenInfo,
-                routerName,
-                txHash,
-              };
-              await MonitoringTelegram.sendBuyAlert(buyData);
-            }
-          }
-        } catch (error) {
-          console.error('Error processing swap event:', error);
-        }
-      }
-    );
-  });
-}
-function stopMonitorBigBuys(): void {
-  BaseContracts.routers.forEach(router => {
-    router.off('Swap');
-    router.removeAllListeners();
-  });
-}
 // Monitor blocks for logging
 function monitorBlocks(): void {
   BaseProviders.wsProvider.on('block', (blockNumber: number) => {
