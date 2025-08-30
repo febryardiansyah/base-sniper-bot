@@ -1,4 +1,4 @@
-import { walletMonitoringService } from '../blockchain/monitoring/walletMonitoring';
+import { walletMonitoringService } from '../services/monitoring/walletMonitoring.service';
 import { config } from '../utils/config';
 import { telegramBot } from './telegram';
 

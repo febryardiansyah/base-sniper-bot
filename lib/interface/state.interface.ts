@@ -1,13 +1,12 @@
-// Interface for the configuration structure
+import { TFactorySelected } from './token.interface';
+
 export interface IState {
-  current_chain: string | 'Base' | 'Solana';
-  chains: Array<string>;
   tokenBlacklist?: Array<string>;
   walletAddresses?: Array<string>;
-  [key: string]: unknown; // Allow for additional configuration fields
+  factorySelected?: Array<TFactorySelected>;
+  [key: string]: unknown;
 }
 
-// Interface for state management options
 export interface IStateServiceOptions {
   configPath?: string;
   autoSave?: boolean;

@@ -1,8 +1,8 @@
 import { ethers } from 'ethers';
 import { config } from '../utils/config';
-import { BaseProviders } from '../blockchain/providers';
-import { IUserTokenInfo, ITokenInfo } from '../interface/types';
-import { BaseContracts } from '../contracts/contracts';
+import { BaseProviders } from '../contracts/providers';
+import { IUserTokenInfo, ITokenInfo } from '../interface/token.interface';
+import * as BaseContracts from '../contracts/contracts';
 
 export async function checkUserTokenInfo(tokenAddress: string): Promise<IUserTokenInfo> {
   const wallet = new ethers.Wallet(config.WALLET_PRIVATE_KEY!, BaseProviders.baseProvider);

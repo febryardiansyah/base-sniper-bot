@@ -1,4 +1,4 @@
-import { stateService } from '../services/state';
+import { stateService } from '../services/state.service';
 import { uniswapV2Blacklist } from './tokenBlacklisted';
 
 export class BlacklistUtils {

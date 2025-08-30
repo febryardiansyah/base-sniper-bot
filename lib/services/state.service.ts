@@ -54,18 +54,6 @@ export class StateService {
     }
   }
 
-  public update(updates: Partial<IState>, save?: boolean): void {
-    Object.assign(this.config, updates);
-
-    if (save ?? this.autoSave) {
-      this.save();
-    }
-  }
-
-  public has(key: string): boolean {
-    return key in this.config;
-  }
-
   public remove(key: string, save?: boolean): boolean {
     if (key in this.config) {
       delete this.config[key];
@@ -80,38 +68,6 @@ export class StateService {
 
   public save(): void {
     this.saveConfigToDisk(this.config);
-  }
-
-  public reload(): IState {
-    this.config = this.loadConfig();
-    return this.getConfig();
-  }
-
-  public reset(save?: boolean): void {
-    if (save ?? this.autoSave) {
-      this.save();
-    }
-  }
-
-  public getConfigPath(): string {
-    return this.configPath;
-  }
-
-  public exportConfig(space: number = 2): string {
-    return JSON.stringify(this.config, null, space);
-  }
-
-  public importConfig(jsonString: string, save?: boolean): void {
-    try {
-      const importedConfig = JSON.parse(jsonString) as IState;
-      this.config = importedConfig;
-
-      if (save ?? this.autoSave) {
-        this.save();
-      }
-    } catch (error) {
-      throw new Error(`Failed to import configuration: ${error}`);
-    }
   }
 }
 

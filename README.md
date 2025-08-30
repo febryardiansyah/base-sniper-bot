@@ -1,391 +1,121 @@
-# Febry's Defi Bot 🎯
+# Base Sniper Bot 🎯
 
-A powerful TypeScript bot that monitors the Base blockchain for new token launches with high liquidity and sends real-time alerts to Telegram. Perfect for identifying early investment opportunities and tracking large transactions.
+<p align="center">
+	<img src="./assets/ss.jpeg" alt="Base Sniper Bot Screenshot" width="350" />
+</p>
 
-## Features 🚀
+Minimal, focused monitoring & trading assistant for the Base chain. Written in TypeScript. Sends real‑time Telegram alerts for:
 
-- **New Token Detection**: Monitors Uniswap V2 and Aerodrome factories for newly created trading pairs
-- **Liquidity Analysis**: Filters tokens based on minimum ETH liquidity requirements
-- **Big Buy Alerts**: Tracks large purchases across multiple DEX routers
-- **Telegram Integration**: Sends formatted alerts with token details and transaction information
-- **Multi-DEX Support**: Monitors both Uniswap V2 and Aerodrome on Base Chain
-- **Universal Router Integration**: 🆕 Support for Uniswap's Universal Router (V2, V3, V4 unified)
-- **Smart Fallback System**: Automatically falls back to legacy routers if Universal Router fails
-- **Smart Filtering**: Avoids spam tokens with configurable supply thresholds
-- **Token Blacklist**: 🆕 Configurable blacklist to filter out unwanted tokens
-- **Real-time Monitoring**: WebSocket connection for instant notifications
-- **Auto Swap**: Automatically buys tokens when new high-liquidity pairs are detected (optional)
-- **Telegram Commands**: Interactive command interface for manual token swaps
+- New Uniswap V2 pairs (and first-liquidity Uniswap V3 pools) with configurable ETH liquidity window
+- Manual buy / sell swaps executed via Relay API (single‑chain Base swaps)
+- Wallet activity (incoming / outgoing ETH + aggregated ERC20 swap summary + basic ERC721; ERC1155 placeholders)
+- Token blacklist filtering (symbol based)
 
-## Prerequisites 📋
+Only active features are documented below (unsupported / future ideas removed for clarity).
 
-- Node.js (v16 or higher)
-- npm or yarn
-- Alchemy API key for Base Chain
-- Telegram Bot Token
-- Telegram Chat ID
+## Features (Implemented) ✅
 
-## Installation 🛠️
+ - Uniswap V2 PairCreated listener (Base)
+ - Uniswap V3 PoolCreated + first Mint liquidity alert (first Mint after creation)
+ - Liquidity filter: MIN_LIQUIDITY_ETH < liquidity < MAX_LIQUIDITY_ETH
+ - Contract verification check (Etherscan) for non‑WETH token sides
+ - Token blacklist (add/remove/reset via commands)
+ - Relay-based buy & sell (/buy, /sell) with slippage control & optional max sell
+ - Wallet monitoring: add/remove/start/stop, aggregated swap summary per tx
+ - Telegram command interface (single authorized chat)
+ - Structured, timestamped alerts with DexScreener & BaseScan links
+ - Dynamic factory selection (add/remove factories at runtime without restart)
 
-1. **Clone the repository**:
-   ```bash
-   git clone <your-repo-url>
-   cd febrys-defi-bot
-   ```
+Not implemented (and therefore omitted): Aerodrome monitoring, universal router, automatic sniping, big buy tracking, multi-chain.
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+## Requirements 📋
 
-3. **Configure environment variables**:
-   Copy the `.env` file and update with your credentials:
-   ```bash
-   cp .env .env.local
-   ```
+- Node 18+
+- Alchemy Base WebSocket + HTTP endpoints
+- Telegram bot token & target chat ID
+- (Optional) Wallet private key for /buy & /sell
+- Etherscan API key (verification checks)
 
-## Configuration ⚙️
+## Quick Start ⚡
 
-### Environment Variables
-
-Update the `.env` file with your configuration:
-
-```env
-# Base Chain RPC URLs
-ALCHEMY_WS_URL=wss://base-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_API_KEY
-ALCHEMY_HTTP_URL=https://base-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_API_KEY
-
-# Telegram Configuration
-TELEGRAM_BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN
-TELEGRAM_CHAT_ID=YOUR_TELEGRAM_CHAT_ID
-
-# Trading Configuration
-BIG_BUY_THRESHOLD=1.0  # Minimum ETH amount to trigger big buy alert
-MIN_LIQUIDITY_ETH=5.0  # Minimum liquidity in ETH to trigger new token alert
-MAX_SUPPLY_THRESHOLD=1000000000  # Maximum token supply to consider
-
-# Universal Router (Recommended for new integrations)
-UNIVERSAL_ROUTER=0x6ff5693b99212da76ad316178a184ab56d299b43
-PERMIT2_ADDRESS=0x000000000022D473030F116dDEE9F6B43aC78BA3
-USE_UNIVERSAL_ROUTER=true  # Enable Universal Router for better liquidity access
-
-# Wallet Configuration
-WALLET_PRIVATE_KEY=YOUR_WALLET_PRIVATE_KEY  # Required for manual swaps
-
+1. Clone & install
+```bash
+git clone <repo-url>
+cd base-sniper-bot
+npm install
 ```
-
-### Getting Required Credentials
-
-#### 1. Alchemy API Key
-- Visit [Alchemy](https://www.alchemy.com/)
-- Create an account and new app for Base Mainnet
-- Copy your API key
-
-#### 2. Telegram Bot Setup
-- Message [@BotFather](https://t.me/botfather) on Telegram
-- Create a new bot with `/newbot`
-- Save the bot token
-- Get your chat ID by messaging [@userinfobot](https://t.me/userinfobot)
-
-## Usage 🚀
-
-### Development Mode (with nodemon auto-restart)
+2. Create `.env` (see .env.example)
+3. Run development mode
 ```bash
 npm run dev
 ```
+4. Use Telegram `/start` (token monitoring) or `/startwallet` (wallet monitoring)
 
-### Development Mode (without auto-restart)
+Only variables actually read in `config.ts` need values; placeholders are fine for unused ones.
+
+## Run Scripts 🛠️
 ```bash
-npm run dev:ts
+npm run dev      # nodemon + ts-node
+npm run dev:ts   # ts-node once
+npm run build    # tsc compile to dist
+npm start        # production (needs build)
 ```
 
-### Production Mode
-```bash
-npm run build
-npm start
-```
-
-### Build Only
-```bash
-npm run build
-```
-
-## Token Blacklist System 🚫
-
-The bot includes a sophisticated token blacklist system to filter out unwanted tokens automatically:
-
-### Features
-- **Persistent Storage**: Blacklist is stored in state files and persists across restarts
-- **Dynamic Management**: Add/remove tokens via Telegram commands
-- **Case-Insensitive Matching**: Flexible matching options for token names
-- **Substring Detection**: Can detect tokens containing blacklisted terms
-- **Default Protection**: Comes pre-loaded with known scam/spam tokens
-
-### Default Blacklisted Tokens
-The bot comes with a curated list of commonly problematic tokens:
-- BabyBlaze, BIGBALZ, ETF, ZORA, KaitoAI, WALLY
-- TRUMP2028, LABUBU, MR BEAST, ZORB, pigwif
-- CVISION, PIKACHU, KAI, HODL, TREE
-- America Party, SOON, VINE, ALPACA, BALL, noice
-
-### Programmatic Usage
-```typescript
-import { BlacklistUtils } from './lib/utils/blacklistUtils';
-
-// Check if a token is blacklisted
-if (BlacklistUtils.isBlacklisted('SCAM_TOKEN')) {
-  console.log('Token is blacklisted, ignoring...');
-}
-
-// Get all blacklisted tokens
-const blacklist = BlacklistUtils.getBlacklist();
-
-// Add/remove tokens programmatically
-BlacklistUtils.addToBlacklist('NEW_SCAM_TOKEN');
-BlacklistUtils.removeFromBlacklist('LEGITIMATE_TOKEN');
-```
-
-### State Configuration
-The blacklist is stored in your state files (`state.json` / `state-dev.json`):
-```json
-{
-  "current_chain": "Base",
-  "chains": ["Base", "Solana"],
-  "tokenBlacklist": [
-    "BabyBlaze",
-    "BIGBALZ",
-    "ETF"
-  ]
-}
-```
-
-## How It Works 🔍
-
-The bot operates in three main monitoring modes:
-
-### 1. New Token Detection
-- Listens to `PairCreated` events from Uniswap V2 and Aerodrome factories
-- Analyzes new pairs for ETH liquidity
-- Filters out tokens with excessive supply
-- Sends alerts for high-liquidity new tokens
-
-### 2. Big Buy Monitoring
-- Monitors `Swap` events on DEX routers
-- Tracks purchases made with ETH above the threshold
-- Provides transaction details and token information
-
-### 3. Auto Swap (Optional)
-- Automatically buys tokens when new high-liquidity pairs are detected
-- Configurable ETH amount per trade
-- Customizable slippage tolerance
-- Supports both Uniswap V2 and Aerodrome routers
-- Sends notifications for executed trades
-
-### 4. Telegram Commands
-- Interactive command interface via Telegram
-- Manual token swaps with customizable parameters
-- Help command for usage instructions
-- Secure access control via chat ID verification
-
-## Alert Types 📱
-
-### New Token Alert
-```
-🎯 NEW HIGH-LIQUIDITY TOKEN DETECTED
-
-🏪 Exchange: Uniswap V2
-🪙 Token: EXAMPLE (Example Token)
-📍 Address: 0x...
-💧 Liquidity: 15.50 ETH
-📊 Total Supply: 1,000,000
-🔗 Pair: 0x...
-
-⚡ SNIPE OPPORTUNITY DETECTED!
-```
-
-### Big Buy Alert
-```
-🔥 BIG BUY DETECTED ON BASE
-
-👤 Buyer: 0x...
-💰 Amount: 5.2500 ETH
-🪙 Token: EXAMPLE
-📍 Token Address: 0x...
-🏪 Router: Uniswap V2
-🔗 TX: 0x...
-
-💡 Someone just made a big purchase!
-```
-
-### Swap Alert
-```
-🤖 SWAP BOUGHT
-
-💰 Amount: 0.1000 ETH
-🪙 Token Address: 0x...
-🏪 Router: Uniswap V2
-👛 Wallet: 0x...
-🔗 TX: 0x...
-
-✅ Swap executed successfully!
-```
-
-## Monitored Contracts 📋
-
-### Factories (New Pair Detection)
-- **Uniswap V2 Factory**: `0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6`
-- **Aerodrome Factory**: `0x420DD381b31aEf6683db96b3aaC7FF414b03B0b`
-
-### Routers (Swap Execution)
-- **Universal Router** 🆕: `0x6ff5693b99212da76ad316178a184ab56d299b43` (Recommended)
-- **Uniswap V2 Router**: `0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24`
-- **Aerodrome Router**: `0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43`
-
-### Key Addresses
-- **WETH (Base)**: `0x4200000000000000000000000000000000000006`
-- **Permit2**: `0x000000000022D473030F116dDEE9F6B43aC78BA3`
-
-## Universal Router Migration 🔄
-
-This project now supports **Uniswap's Universal Router**, which is the recommended entry point for all ERC20 swaps. The Universal Router provides:
-
-- **Unified Access**: Supports Uniswap V2, V3, and V4 in a single contract
-- **Better Liquidity**: Access to more liquidity sources
-- **Gas Efficiency**: Optimized for lower gas costs
-- **Future-Proof**: Official Uniswap recommendation
-
-### Migration Guide
-
-1. **Enable Universal Router**:
-   ```env
-   USE_UNIVERSAL_ROUTER=true
-   ```
-
-2. **Fallback Strategy**: The bot automatically falls back to legacy routers if Universal Router fails
-
-3. **Test First**: Start with small amounts to verify functionality
-
-For detailed migration information, see [UNIVERSAL_ROUTER_MIGRATION.md](./UNIVERSAL_ROUTER_MIGRATION.md).
-
-### Testing Universal Router
-
-Run the test script to verify Universal Router integration:
-```bash
-node test-universal-router.js
-```
-
-## Customization 🎛️
-
-### Telegram Commands
-
-The bot supports the following Telegram commands:
-
-- `/help` - Display available commands and usage information
-
-- `/start` - Start monitoring for new tokens
-- `/stop` - Stop monitoring
-- `/status` - Show current monitoring status
-
-#### Trading Commands
-- `/buy <token_address> <eth_amount>` - Buy tokens with ETH
-  - Example: `/buy 0x1234...abcd 0.1`
-
-- `/sell <token_address> <token_amount>` or `/sell <token_address> max` - Sell tokens for ETH
-
-- `/tokenbalance <token_address>` - Get your balance for a specific token
-
-#### Utility Commands
-- `/myinfo` - Check your wallet address and balance info
-
-- `/chain` - Show current blockchain network
-- `/chainlist` - Show list of supported blockchain networks  
-- `/setchain <chain_name>` - Switch to a different blockchain network
-
-#### Token Blacklist Commands 🆕
-- `/blacklist` - Show all blacklisted tokens
-- `/addblacklist <token_name>` - Add a token to the blacklist
-  - Example: `/addblacklist SCAM_TOKEN`
-
-- `/removeblacklist <token_name>` - Remove a token from the blacklist
-  - Example: `/removeblacklist EXAMPLE`
-
-- `/resetblacklist` - Reset blacklist to default tokens
-
-### Adjusting Filters
-
-Modify these values in your `.env` file:
-
-- `BIG_BUY_THRESHOLD`: Minimum ETH amount for big buy alerts
-- `MIN_LIQUIDITY_ETH`: Minimum liquidity required for new token alerts
-- `MAX_SUPPLY_THRESHOLD`: Maximum token supply to avoid spam tokens
-- `BLOCK_CONFIRMATION_COUNT`: Number of blocks to wait before processing
-
-### Swap Configuration
-
-Configure swap behavior with these settings:
-
-- `WALLET_PRIVATE_KEY`: Your wallet's private key (required for manual swaps via Telegram commands)
-
-> Note: Manual swaps via Telegram commands allow you to specify custom parameters for each transaction.
-
-### Adding More DEXs
-
-To monitor additional DEXs, add their factory and router contracts to the respective arrays in `index.ts`.
-
-## Error Handling 🛡️
-
-- Automatic retry mechanism for failed requests
-- Graceful handling of network disconnections
-- Fallback Telegram messaging via HTTP API
-- Comprehensive error logging
-
-## Security Considerations 🔒
-
-- Never commit your `.env` file with real credentials
-- Use environment variables in production
-- Consider rate limiting for high-frequency alerts
-- Monitor your Alchemy usage to avoid hitting limits
-
-## Troubleshooting 🔧
-
-### Common Issues
-
-1. **WebSocket Connection Errors**
-   - Check your Alchemy API key
-   - Ensure you're using the correct Base Chain endpoint
-
-2. **Telegram Messages Not Sending**
-   - Verify your bot token and chat ID
-   - Ensure the bot is added to your chat/channel
-
-3. **No Alerts Received**
-   - Check if thresholds are set too high
-   - Verify contract addresses are correct
-   - Monitor console logs for errors
-
-### Debug Mode
-
-Enable detailed logging by setting:
-```env
-NODE_ENV=development
-```
-
-## Contributing 🤝
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+## Telegram Commands
+
+Monitoring:
+ - /start /stop /status – token monitoring (only currently selected factories; /start shows count)
+ - /factorylist – list available factory keys
+ - /factoryselected – show selected factories persisted in state
+ - /addfactory <factory_name> – add factory (e.g. uniswapV2, uniswapV3)
+ - /removefactory <factory_name> – remove factory
+ - /listen <wallet> /unlisten <wallet> /unlistenall – manage monitored wallets
+ - /wallets /walletstatus /startwallet /stopwallet – wallet monitoring control
+
+Trading:
+- /buy <token> <eth> [router_index] [slippage%] – buy via Relay (router_index kept for legacy: 0/1)
+- /sell <token> <amount|max> [router_index] [slippage%]
+- /tokenbalance <token>
+
+Utility:
+ - /blacklist – list symbols
+ - /addblacklist <symbol>
+ - /removeblacklist <symbol>
+ - /resetblacklist
+ - /myinfo – basic wallet info
+ - /tokenbalance <token_address>
+ - /help – list commands
+
+All restricted to the configured `TELEGRAM_CHAT_ID`.
+
+## Blacklist 🚫
+Symbol list is persisted in the environment‑specific state file (see State Persistence). Commands modify it at runtime. Helpers in `blacklistUtils.ts` (exact match + substring helpers). Reset with `/resetblacklist`.
+
+## State Persistence 🗂️
+Runtime data (token blacklist, monitored wallet addresses, etc.) is stored in a JSON file selected by `NODE_ENV`:
+
+| Environment | File Used    |
+|-------------|--------------|
+| production  | `state.json` |
+| anything else (dev/test) | `state-dev.json` |
+
+Notes:
+- The file must already exist; the service loads it with `readFileSync` and will throw if missing.
+- Keep both files if you alternate between dev and production locally; otherwise only create the one you need.
+- Minimal starter content:
+	```json
+	{
+		"tokenBlacklist": [],
+		"walletAddresses": [],
+		"factorySelected": ["uniswapV2", "uniswapV3"]
+	}
+	```
+- To unify environments you can: (a) always run with `NODE_ENV=production` and just keep `state.json`, or (b) adjust `StateService` to auto-create a default if the file is missing.
+- `factorySelected` controls which factory listeners (/start) attaches. Changing via commands hot‑reloads listeners without process restart.
+
+Security tip: Never put secrets in these state files; they are for non‑sensitive runtime data only.
 
 ## Disclaimer ⚠️
+Educational use only. No warranty. You assume all risk.
 
-This bot is for educational and informational purposes only. Always do your own research before making any investment decisions. The authors are not responsible for any financial losses.
-
-## License 📄
-
-MIT License - see LICENSE file for details.
-
----
-
-**Happy Sniping! 🎯**
+MIT License.
