@@ -8,7 +8,7 @@ import { factoryList } from '../utils/utils';
 import { stateService } from '../services/state.service';
 import { checkUserTokenInfo } from '../services/info.service';
 import { ethers } from 'ethers';
-import { buyTokenWithRelayRouter, sellTokenWithRelayRouter } from '../services/relay.service';
+import { relayService } from '../services/relay.service';
 
 // Send new pair alert
 export async function sendPairAlert(pairInfo: IPairInfo, exchange: string): Promise<void> {
@@ -259,7 +259,11 @@ export function commandHandlers(): void {
       );
 
       // Execute the swap using Relay Router
-      const buyResult = await buyTokenWithRelayRouter(tokenAddress, ethAmount, slippage);
+      const buyResult = await relayService.buyTokenWithRelayRouter(
+        tokenAddress,
+        ethAmount,
+        slippage
+      );
 
       await telegramBot.sendMessage(
         chatId,
@@ -365,7 +369,11 @@ export function commandHandlers(): void {
       );
 
       // Execute the swap using Relay Router
-      const sellResult = await sellTokenWithRelayRouter(tokenAddress, tokenAmount, slippage);
+      const sellResult = await relayService.sellTokenWithRelayRouter(
+        tokenAddress,
+        tokenAmount,
+        slippage
+      );
 
       await telegramBot.sendMessage(
         chatId,
