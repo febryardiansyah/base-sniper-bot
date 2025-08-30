@@ -1,5 +1,9 @@
 import BigNumber from 'bignumber.js';
-import { BaseMonitoring } from '../blockchain/monitoring/monitoring';
+import {
+  startMonitor,
+  statusMonitoring,
+  stopMonitor,
+} from '../blockchain/monitoring/tokenMonitoring';
 import { getNonWETHToken } from '../blockchain/pairAnalyzer';
 import { IPairInfo } from '../interface/token.interface';
 import { config } from '../utils/config';
@@ -48,27 +52,27 @@ export async function sendPairAlert(pairInfo: IPairInfo, exchange: string): Prom
 export function commandHandlers(): void {
   telegramBot.onText(/^\/start$/, async msg => {
     const chatId = msg.chat.id;
-    if (BaseMonitoring.statusMonitoring()) {
+    if (statusMonitoring()) {
       await telegramBot.sendMessage(chatId, '⚠️ Monitoring is already running');
       return;
     }
-    BaseMonitoring.startMonitor();
+    startMonitor();
     await telegramBot.sendMessage(chatId, '🟢 Monitoring started');
   });
 
   telegramBot.onText(/^\/stop$/, async msg => {
     const chatId = msg.chat.id;
-    if (!BaseMonitoring.statusMonitoring()) {
+    if (!statusMonitoring()) {
       await telegramBot.sendMessage(chatId, '⚠️ Monitoring is not running');
       return;
     }
-    BaseMonitoring.stopMonitor();
+    stopMonitor();
     await telegramBot.sendMessage(chatId, '🛑 Monitoring stopped');
   });
 
   telegramBot.onText(/^\/status$/, async msg => {
     const chatId = msg.chat.id;
-    const status = BaseMonitoring.statusMonitoring() ? 'Running 🟢' : 'Stopped 🛑';
+    const status = statusMonitoring() ? 'Running 🟢' : 'Stopped 🛑';
     await telegramBot.sendMessage(chatId, `Monitoring Status: ${status}`);
   });
 }

@@ -1,13 +1,10 @@
 import { walletMonitoringService } from './blockchain/monitoring/walletMonitoring';
-import * as BaseContracts from './blockchain/contracts';
-import { setupCommandHandlers } from './telegram/telegram';
+import { telegramService } from './telegram/telegram';
 
 export class App {
   async start(): Promise<void> {
     console.log("🚀 Febry's Defi Bot Starting...");
-
-    // Set up Telegram command handlers
-    setupCommandHandlers();
+    await telegramService.init();
     console.log('📱 Telegram command interface enabled');
 
     // Initialize wallet monitoring service

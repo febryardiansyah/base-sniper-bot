@@ -3,19 +3,19 @@ import { BaseProviders } from './providers';
 import { config } from '../utils/config';
 
 // Import ABIs
-import aerodromeFactoryAbiJson from '../../abi/erc20/AerodromeFactory.json';
-import erc20AbiJson from '../../abi/erc20/ERC20.json';
-import routerAbiJson from '../../abi/erc20/Router.json';
-import uniswapV2FactoryAbiJson from '../../abi/erc20/UniswapV2Factory.json';
-import uniswapV2PairJson from '../../abi/erc20/UniswapV2Pair.json';
+import aerodromeFactoryAbiJson from '../../abi/AerodromeFactory.json';
+import erc20AbiJson from '../../abi/ERC20.json';
+import routerAbiJson from '../../abi/Router.json';
+import uniswapV2FactoryAbiJson from '../../abi/UniswapV2Factory.json';
+import uniswapV2PairJson from '../../abi/UniswapV2Pair.json';
 
 // Import Uniswap V3 and V4 ABIs
-import uniswapV3FactoryAbiJson from '../../abi/erc20/UniswapV3Factory.json';
-import uniswapV3PoolAbiJson from '../../abi/erc20/UniswapV3Pool.json';
-import uniswapV4PoolManagerAbiJson from '../../abi/erc20/UniswapV4PoolManager.json';
+import uniswapV3FactoryAbiJson from '../../abi/UniswapV3Factory.json';
+import uniswapV3PoolAbiJson from '../../abi/UniswapV3Pool.json';
+import uniswapV4PoolManagerAbiJson from '../../abi/UniswapV4PoolManager.json';
 
 // Import Zora Factory ABI
-import zoraFactoryAbiJson from '../../abi/erc20/ZoraFactory.json';
+import zoraFactoryAbiJson from '../../abi/ZoraFactory.json';
 
 // Export ethers
 export { ethers };
@@ -53,16 +53,6 @@ export const zoraFactory = new ethers.Contract(
   zoraFactoryAbiJson,
   BaseProviders.wsProvider
 );
-
-// Initialize router contracts
-export const routers = [
-  new ethers.Contract(config.UNISWAP_V2_ROUTER, routerAbiJson, BaseProviders.wsProvider),
-  new ethers.Contract(config.AERODROME_ROUTER, routerAbiJson, BaseProviders.wsProvider),
-];
-
-// Factory names for logging
-export const factoryNames = ['Uniswap V2', 'Aerodrome'];
-export const routerNames = ['Uniswap V2', 'Aerodrome', 'Universal Router'];
 
 // Create pair contract instance
 export function createPairContract(
