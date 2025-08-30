@@ -3,6 +3,8 @@ export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+export const factoryList = ['uniswapV2', 'uniswapV3'];
+
 interface ICommand {
   command: string;
   description: string;

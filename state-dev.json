@@ -25,5 +25,9 @@
         "Monkey D. Luffy",
         "ZALA AI"
     ],
-    "walletAddresses": []
+    "walletAddresses": [],
+    "factorySelected": [
+        "uniswapV3",
+        "uniswapV2"
+    ]
 }

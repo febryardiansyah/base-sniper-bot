@@ -12,11 +12,14 @@ import {
   uniswapV3Factory,
   zoraFactory,
 } from '../../contracts/contracts';
+import { stateService } from '../state.service';
+import { TFactorySelected } from '../../interface/token.interface';
 
 class TokenMonitoringService {
   private trackedPairsUniswapV2 = new Set<string>();
   private trackedPairsUniswapV3 = new Set<string>();
   private monitoring = false;
+  private selectedFactories = new Set<TFactorySelected>();
 
   // Bound handlers for removal
   private onPairCreatedHandler?: (
@@ -70,7 +73,16 @@ class TokenMonitoringService {
     }
   }
 
-  private attachListeners(): void {
+  private refreshSelectedFactories(): void {
+    const cfg = stateService.getConfig();
+    const list = (cfg.factorySelected || []) as TFactorySelected[];
+    this.selectedFactories = new Set(list);
+  }
+
+  private async attachListeners(): Promise<void> {
+    // Load current selection before attaching
+    this.refreshSelectedFactories();
+
     // Uniswap V2 / Aerodrome PairCreated
     this.onPairCreatedHandler = async (
       token0: string,
@@ -117,7 +129,11 @@ class TokenMonitoringService {
         console.error(`Error processing new pair ${pairAddress}:`, error);
       }
     };
-    uniswapV2Factory.on('PairCreated', this.onPairCreatedHandler);
+    if (this.selectedFactories.has('uniswapV2')) {
+      uniswapV2Factory.on('PairCreated', this.onPairCreatedHandler);
+    } else {
+      this.onPairCreatedHandler = undefined; // ensure detach won't try to remove nonexistent listener
+    }
 
     // Uniswap V3 PoolCreated
     this.onPoolCreatedHandler = async (
@@ -170,7 +186,11 @@ class TokenMonitoringService {
         console.error(`Error processing V3 pool ${pool}:`, error);
       }
     };
-    uniswapV3Factory.on('PoolCreated', this.onPoolCreatedHandler);
+    if (this.selectedFactories.has('uniswapV3')) {
+      uniswapV3Factory.on('PoolCreated', this.onPoolCreatedHandler);
+    } else {
+      this.onPoolCreatedHandler = undefined;
+    }
 
     // Zora coin events (currently optional/commented in original)
     this.onCoinCreatedHandler = this.onCoinCreated.bind(this);
@@ -204,10 +224,25 @@ class TokenMonitoringService {
     }
   }
 
-  public start(): void {
+  public async start(): Promise<void> {
     if (this.monitoring) return;
     this.monitoring = true;
-    this.attachListeners();
+    await this.attachListeners();
+  }
+
+  public async reloadFactories(): Promise<void> {
+    if (!this.monitoring) {
+      // Just refresh the cached selection for when start() is called later
+      this.refreshSelectedFactories();
+      return;
+    }
+    // Re-bind
+    this.detachListeners();
+    await this.attachListeners();
+  }
+
+  public getSelectedFactories(): string[] {
+    return Array.from(this.selectedFactories.values());
   }
 
   public stop(): void {

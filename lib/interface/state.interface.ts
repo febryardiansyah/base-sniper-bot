@@ -1,6 +1,9 @@
+import { TFactorySelected } from './token.interface';
+
 export interface IState {
   tokenBlacklist?: Array<string>;
   walletAddresses?: Array<string>;
+  factorySelected?: Array<TFactorySelected>;
   [key: string]: unknown;
 }
 

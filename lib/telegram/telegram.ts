@@ -4,7 +4,6 @@ import { BlacklistUtils } from '../utils/blacklistUtils';
 import { config } from '../utils/config';
 import { commandList } from '../utils/utils';
 import * as MonitoringTelegram from './monitoringTelegram';
-import * as TokenTelegram from './tokenTelegram';
 import * as WalletTelegram from './walletTelegram';
 
 export { MonitoringTelegram };
@@ -57,7 +56,6 @@ class TelegramService {
 
     // Delegate feature-specific handlers
     MonitoringTelegram.commandHandlers();
-    TokenTelegram.commandHandlers();
     WalletTelegram.commandHandlers();
 
     // /blacklist

@@ -41,3 +41,5 @@ export interface IEtherscanResponse {
   message: string;
   result: ITransaction[];
 }
+
+export type TFactorySelected = 'uniswapV2' | 'uniswapV3';

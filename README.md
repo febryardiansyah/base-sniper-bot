@@ -1,7 +1,7 @@
 # Base Sniper Bot 🎯
 
 <p align="center">
-	<img src="./assets/ss.jpeg" alt="Base Sniper Bot Screenshot" width="650" />
+	<img src="./assets/ss.jpeg" alt="Base Sniper Bot Screenshot" width="350" />
 </p>
 
 Minimal, focused monitoring & trading assistant for the Base chain. Written in TypeScript. Sends real‑time Telegram alerts for:
@@ -15,15 +15,16 @@ Only active features are documented below (unsupported / future ideas removed fo
 
 ## Features (Implemented) ✅
 
-- Uniswap V2 PairCreated listener (Base)
-- Uniswap V3 PoolCreated + first Mint liquidity alert
-- Liquidity filter: MIN_LIQUIDITY_ETH < liquidity < MAX_LIQUIDITY_ETH
-- Contract verification check (Etherscan) for non‑WETH token sides
-- Token blacklist (add/remove/reset via commands)
-- Relay-based buy & sell (/buy, /sell) with slippage control & optional max sell
-- Wallet monitoring: add/remove/start/stop, aggregated swap summary per tx
-- Telegram command interface (single authorized chat)
-- Structured, timestamped alerts with DexScreener & BaseScan links
+ - Uniswap V2 PairCreated listener (Base)
+ - Uniswap V3 PoolCreated + first Mint liquidity alert (first Mint after creation)
+ - Liquidity filter: MIN_LIQUIDITY_ETH < liquidity < MAX_LIQUIDITY_ETH
+ - Contract verification check (Etherscan) for non‑WETH token sides
+ - Token blacklist (add/remove/reset via commands)
+ - Relay-based buy & sell (/buy, /sell) with slippage control & optional max sell
+ - Wallet monitoring: add/remove/start/stop, aggregated swap summary per tx
+ - Telegram command interface (single authorized chat)
+ - Structured, timestamped alerts with DexScreener & BaseScan links
+ - Dynamic factory selection (add/remove factories at runtime without restart)
 
 Not implemented (and therefore omitted): Aerodrome monitoring, universal router, automatic sniping, big buy tracking, multi-chain.
 
@@ -60,12 +61,16 @@ npm run build    # tsc compile to dist
 npm start        # production (needs build)
 ```
 
-## Telegram Commands �
+## Telegram Commands
 
 Monitoring:
-- /start /stop /status – token monitoring (Uniswap V2 + V3)
-- /listen <wallet> /unlisten <wallet> /unlistenall – manage monitored wallets
-- /wallets /walletstatus /startwallet /stopwallet – wallet monitoring control
+ - /start /stop /status – token monitoring (only currently selected factories; /start shows count)
+ - /factorylist – list available factory keys
+ - /factoryselected – show selected factories persisted in state
+ - /addfactory <factory_name> – add factory (e.g. uniswapV2, uniswapV3)
+ - /removefactory <factory_name> – remove factory
+ - /listen <wallet> /unlisten <wallet> /unlistenall – manage monitored wallets
+ - /wallets /walletstatus /startwallet /stopwallet – wallet monitoring control
 
 Trading:
 - /buy <token> <eth> [router_index] [slippage%] – buy via Relay (router_index kept for legacy: 0/1)
@@ -73,12 +78,13 @@ Trading:
 - /tokenbalance <token>
 
 Utility:
-- /blacklist – list symbols
-- /addblacklist <symbol>
-- /removeblacklist <symbol>
-- /resetblacklist
-- /myinfo – basic wallet info
-- /help – list commands
+ - /blacklist – list symbols
+ - /addblacklist <symbol>
+ - /removeblacklist <symbol>
+ - /resetblacklist
+ - /myinfo – basic wallet info
+ - /tokenbalance <token_address>
+ - /help – list commands
 
 All restricted to the configured `TELEGRAM_CHAT_ID`.
 
@@ -100,10 +106,12 @@ Notes:
 	```json
 	{
 		"tokenBlacklist": [],
-		"walletAddresses": []
+		"walletAddresses": [],
+		"factorySelected": ["uniswapV2", "uniswapV3"]
 	}
 	```
 - To unify environments you can: (a) always run with `NODE_ENV=production` and just keep `state.json`, or (b) adjust `StateService` to auto-create a default if the file is missing.
+- `factorySelected` controls which factory listeners (/start) attaches. Changing via commands hot‑reloads listeners without process restart.
 
 Security tip: Never put secrets in these state files; they are for non‑sensitive runtime data only.
 
