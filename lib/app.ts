@@ -3,7 +3,7 @@ import { telegramService } from './telegram/telegram';
 
 export class App {
   async start(): Promise<void> {
-    console.log("🚀 Febry's Defi Bot Starting...");
+    console.log('🚀 Base Sniper Bot Starting...');
     await telegramService.init();
     console.log('📱 Telegram command interface enabled');
 

@@ -50,7 +50,7 @@ class TelegramService {
         return;
       }
       const envStatus = config.IS_DEVELOPMENT ? ' (DEV)' : '';
-      let helpMessage = `🤖 *Febry's Defi Bot Commands${envStatus}*\n`;
+      let helpMessage = `🤖 *Base Sniper Bot Commands${envStatus}*\n`;
       for (const e of commandList) helpMessage += `\n${e.command} - *${e.description}*`;
       await telegramBot.sendMessage(chatId, helpMessage, { parse_mode: 'Markdown' });
     });

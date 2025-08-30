@@ -1,8 +1,4 @@
 {
-    "current_chain": "Base",
-    "chains": [
-        "Base"
-    ],
     "tokenBlacklist": [
         "BabyBlaze",
         "BIGBALZ",
