@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import axios from 'axios';
 import { config } from '../utils/config';
-import { BaseProviders } from '../blockchain/providers';
+import { BaseProviders } from '../contracts/providers';
 import {
   IRelayQuoteResponse,
   IRelaySwapStatusResponse,

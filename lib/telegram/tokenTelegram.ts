@@ -3,7 +3,6 @@ import { buyTokenWithRelayRouter, sellTokenWithRelayRouter } from '../services/r
 import { config } from '../utils/config';
 import { telegramBot } from './telegram';
 import { checkUserTokenInfo } from '../services/info.service';
-import { stateService } from '../services/state.service';
 
 export function commandHandlers(): void {
   // Handle /swap command

@@ -1,4 +1,4 @@
-import { walletMonitoringService } from './blockchain/monitoring/walletMonitoring';
+import { walletMonitoringService } from './services/monitoring/walletMonitoring.service';
 import { telegramService } from './telegram/telegram';
 
 export class App {

@@ -9,11 +9,11 @@ import {
   zeroPadValue,
 } from 'ethers';
 import { WalletTransactionData } from '../../interface/wallet.interface';
-import { isContractVerified } from '../../services/etherscan.service';
-import { stateService } from '../../services/state.service';
+import { isContractVerified } from '../etherscan.service';
+import { stateService } from '../state.service';
 import { telegramBot } from '../../telegram/telegram';
 import { config } from '../../utils/config';
-import { BaseProviders } from '../providers';
+import { BaseProviders } from '../../contracts/providers';
 
 class WalletMonitoringService {
   private isMonitoring = false;
@@ -42,6 +42,7 @@ class WalletMonitoringService {
   private loadWalletAddresses(): void {
     const walletAddresses = stateService.get<string[]>('walletAddresses') || [];
     console.log(`🔄 Loaded ${walletAddresses.length} wallet addresses from state`);
+
     this.monitoredWallets.clear();
     walletAddresses.forEach(address => {
       this.monitoredWallets.add(address.toLowerCase());
@@ -50,12 +51,15 @@ class WalletMonitoringService {
 
   public addWalletAddress(address: string): boolean {
     if (!ethers.isAddress(address)) return false;
+
     const normalizedAddress = address.toLowerCase();
     if (this.monitoredWallets.has(normalizedAddress)) return false;
+
     this.monitoredWallets.add(normalizedAddress);
     const currentAddresses = stateService.get<string[]>('walletAddresses') || [];
     currentAddresses.push(address);
     stateService.set('walletAddresses', currentAddresses);
+
     if (this.isMonitoring) {
       // Add listeners only for the new address without restarting
       this.addListenersForWallet(normalizedAddress);
@@ -66,8 +70,10 @@ class WalletMonitoringService {
   public removeWalletAddress(address: string): boolean {
     const normalized = address.toLowerCase();
     if (!this.monitoredWallets.has(normalized)) return false;
+
     this.monitoredWallets.delete(normalized);
     const currentAddresses = stateService.get<string[]>('walletAddresses') || [];
+
     stateService.set(
       'walletAddresses',
       currentAddresses.filter(a => a.toLowerCase() !== normalized)
@@ -81,6 +87,7 @@ class WalletMonitoringService {
     const removed = this.monitoredWallets.size;
     const wasMonitoring = this.isMonitoring;
     if (removed === 0) return { removed, wasMonitoring };
+
     // Stop monitoring to cleanly remove listeners
     if (wasMonitoring) {
       this.stopMonitoring();
@@ -91,6 +98,7 @@ class WalletMonitoringService {
     this.monitoredWallets.clear();
     stateService.set('walletAddresses', []);
     console.log(`🧹 Cleared all monitored wallets (removed ${removed})`);
+
     return { removed, wasMonitoring };
   }
 
@@ -107,6 +115,7 @@ class WalletMonitoringService {
     const gasCost = parseFloat(
       ethers.formatEther((BigInt(data.gasUsed) * BigInt(data.gasPrice)).toString())
     );
+
     const message =
       `🔍 *WALLET ACTIVITY DETECTED*\n\n` +
       `👤 Wallet: \`${data.walletAddress}\`\n` +
@@ -118,6 +127,7 @@ class WalletMonitoringService {
       `📦 Block: *${data.blockNumber}*\n` +
       `🔗 TX: [View on BaseScan](https://basescan.org/tx/${data.txHash})\n\n` +
       `⏰ Base Chain Transaction`;
+
     try {
       await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
         parse_mode: 'Markdown',
@@ -133,6 +143,7 @@ class WalletMonitoringService {
     try {
       const block = await BaseProviders.wsProvider.getBlock(blockNumber, true);
       if (!block || !block.transactions) return;
+
       for (const txData of block.transactions) {
         if (typeof txData === 'string') continue;
         const tx = txData as TransactionResponse;
@@ -140,9 +151,11 @@ class WalletMonitoringService {
         const to = tx.to ? getAddress(tx.to) : null;
         const fromMonitored = from && this.monitoredWallets.has(from.toLowerCase());
         const toMonitored = to && this.monitoredWallets.has(to.toLowerCase());
+
         if ((fromMonitored || toMonitored) && tx.value && tx.value > 0n) {
           const receipt = await tx.wait();
           if (!receipt) continue;
+
           const transactionData: WalletTransactionData = {
             walletAddress: fromMonitored ? from! : to!,
             txHash: tx.hash,
@@ -167,12 +180,14 @@ class WalletMonitoringService {
     try {
       const parsed = this.erc20Iface.parseLog(log);
       if (!parsed) return;
+
       const from = getAddress(parsed.args.from);
       const to = getAddress(parsed.args.to);
       const raw = parsed.args.value as bigint; // amount or tokenId
       let isErc20 = true;
       let symbol = 'TOKEN';
       let decimals = 18;
+
       try {
         const decData = await BaseProviders.wsProvider.call({
           to: log.address,
@@ -187,6 +202,7 @@ class WalletMonitoringService {
       } catch {
         isErc20 = false; // treat as ERC-721 (or non-standard)
       }
+
       const walletAddress = dir === 'OUT' ? from : to;
       if (isErc20) {
         // Aggregate full swap for this transaction instead of per-transfer message
@@ -202,6 +218,7 @@ class WalletMonitoringService {
           `🏷️ Contract: \`${log.address}\`\n` +
           `🔗 TX: [View on BaseScan](https://basescan.org/tx/${log.transactionHash})\n\n` +
           `⏰ ERC-721 Transfer`;
+
         try {
           await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
             parse_mode: 'Markdown',
@@ -210,6 +227,7 @@ class WalletMonitoringService {
         } catch (error) {
           console.error('Error sending ERC-721 transfer alert:', error);
         }
+
         console.log(`🖼️ ERC721 ${dir}: ${walletAddress} - tokenId ${tokenId}`);
       }
     } catch (error) {
@@ -220,8 +238,10 @@ class WalletMonitoringService {
   private async getTokenMeta(address: string): Promise<{ symbol: string; decimals: number }> {
     const lower = address.toLowerCase();
     if (this.tokenMetaCache.has(lower)) return this.tokenMetaCache.get(lower)!;
+
     let symbol = 'TOKEN';
     let decimals = 18;
+
     try {
       const decData = await BaseProviders.wsProvider.call({
         to: address,
@@ -236,19 +256,24 @@ class WalletMonitoringService {
     } catch {
       // ignore
     }
+
     this.tokenMetaCache.set(lower, { symbol, decimals });
     return { symbol, decimals };
   }
 
   private async processSwapSummary(txHash: string): Promise<void> {
     if (this.processedTx.has(txHash)) return;
+
     this.processedTx.add(txHash);
+
     try {
       const receipt = await BaseProviders.wsProvider.getTransactionReceipt(txHash);
       if (!receipt) return;
+
       const tx = await BaseProviders.wsProvider.getTransaction(txHash);
       const transferEvent = this.erc20Iface.getEvent('Transfer');
-      if (!transferEvent) return; // safety
+      if (!transferEvent) return;
+
       const transferTopic = transferEvent.topicHash;
       interface TokenMove {
         token: string;
@@ -263,9 +288,11 @@ class WalletMonitoringService {
       // ERC20 transfers
       for (const log of receipt.logs) {
         if (log.topics[0] !== transferTopic || log.topics.length < 3) continue;
+
         try {
           const parsed = this.erc20Iface.parseLog(log);
           if (!parsed) continue;
+
           const from = getAddress(parsed.args.from);
           const to = getAddress(parsed.args.to);
           const rawAmount = parsed.args.value as bigint;
@@ -273,7 +300,9 @@ class WalletMonitoringService {
           const toLower = to.toLowerCase();
           const involvesFrom = this.monitoredWallets.has(fromLower);
           const involvesTo = this.monitoredWallets.has(toLower);
+
           if (!involvesFrom && !involvesTo) continue;
+
           const { symbol, decimals } = await this.getTokenMeta(log.address);
           const amountStr = formatUnits(rawAmount, decimals);
           if (involvesFrom)
@@ -344,6 +373,7 @@ class WalletMonitoringService {
         // Verify first OUT / IN token contracts (ignore native ETH placeholder)
         let outFlag = '';
         let inFlag = '';
+
         if (outs.length > 0 && outs[0].token !== 'ETH') {
           try {
             const verified = await isContractVerified(outs[0].token);
@@ -352,6 +382,7 @@ class WalletMonitoringService {
             outFlag = '❔';
           }
         }
+
         if (ins.length > 0 && ins[0].token !== 'ETH') {
           try {
             const verified = await isContractVerified(ins[0].token);
@@ -395,10 +426,12 @@ class WalletMonitoringService {
         console.warn('Failed to parse ERC1155 log');
         return;
       }
+
       const from = getAddress(parsed.args.from);
       const to = getAddress(parsed.args.to);
       // (Removed internal bot address skip)
       const walletAddress = dir === 'OUT' ? from : to;
+
       if (parsed.name === 'TransferSingle') {
         const id = (parsed.args.id as bigint).toString();
         const value = (parsed.args.value as bigint).toString();
@@ -412,6 +445,7 @@ class WalletMonitoringService {
           `🏷️ Token: \`${log.address}\`\n` +
           `🔗 TX: [View on BaseScan](https://basescan.org/tx/${log.transactionHash})\n\n` +
           `⏰ ERC-1155 Single Transfer`;
+
         try {
           await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
             parse_mode: 'Markdown',
@@ -420,12 +454,14 @@ class WalletMonitoringService {
         } catch (error) {
           console.error('Error sending ERC1155 single transfer alert:', error);
         }
+
         console.log(`🎨 ERC1155 ${dir} Single: ${walletAddress} - ID:${id} x${value}`);
       } else if (parsed.name === 'TransferBatch') {
         const ids = (parsed.args.ids as readonly bigint[]).map(x => x.toString());
         const values = Array.isArray(parsed.args.values)
           ? (parsed.args.values as unknown as readonly bigint[]).map(x => x.toString())
           : [];
+
         const message =
           `🎨 *ERC1155 BATCH TRANSFER DETECTED*\n\n` +
           `👤 Wallet: \`${walletAddress}\`\n` +
@@ -436,6 +472,7 @@ class WalletMonitoringService {
           `🏷️ Token: \`${log.address}\`\n` +
           `🔗 TX: [View on BaseScan](https://basescan.org/tx/${log.transactionHash})\n\n` +
           `⏰ ERC-1155 Batch Transfer`;
+
         try {
           await telegramBot.sendMessage(config.TELEGRAM_CHAT_ID, message, {
             parse_mode: 'Markdown',
@@ -457,6 +494,7 @@ class WalletMonitoringService {
     const transferTopic = id('Transfer(address,address,uint256)');
     const transferSingleTopic = id('TransferSingle(address,address,address,uint256,uint256)');
     const transferBatchTopic = id('TransferBatch(address,address,address,uint256[],uint256[])');
+
     try {
       const addrTopic = zeroPadValue(getAddress(walletLower), 32);
       // ERC20/721 OUT

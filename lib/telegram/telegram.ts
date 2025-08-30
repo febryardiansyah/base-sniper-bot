@@ -9,7 +9,7 @@ import * as WalletTelegram from './walletTelegram';
 
 export { MonitoringTelegram };
 
-export class TelegramService {
+class TelegramService {
   public readonly bot: TelegramBot;
   private handlersInitialized = false;
 

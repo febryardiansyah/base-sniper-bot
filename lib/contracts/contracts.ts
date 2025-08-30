@@ -29,8 +29,8 @@ export const zoraFactoryAbi = zoraFactoryAbiJson;
 
 // Initialize factory contracts
 export const uniswapV2Factory = new ethers.Contract(
-  config.AERODROME_FACTORY,
-  aerodromeFactoryAbiJson,
+  config.UNISWAP_V2_FACTORY_ADDRESS,
+  uniswapV2FactoryAbiJson,
   BaseProviders.wsProvider
 );
 
