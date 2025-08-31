@@ -392,16 +392,30 @@ class WalletMonitoringService {
           }
         }
 
+        // Build lines with contract address right after verification icon (if not ETH)
+        let outLine = '';
+        if (outs.length > 0) {
+          const outTokenAddr = outs[0].token !== 'ETH' ? getAddress(outs[0].token) : '';
+          outLine =
+            `🔻 *Out*:\n${outs[0].amount} ${outs[0].symbol}${outFlag ? ' ' + outFlag : ''}` +
+            (outTokenAddr ? ` \`${outTokenAddr}\`` : '') +
+            `\n\n`;
+        }
+        let inLine = '';
+        if (ins.length > 0) {
+          const inTokenAddr = ins[0].token !== 'ETH' ? getAddress(ins[0].token) : '';
+          inLine =
+            `🔺 *In*:\n${ins[0].amount} ${ins[0].symbol}${inFlag ? ' ' + inFlag : ''}` +
+            (inTokenAddr ? ` \`${inTokenAddr}\`` : '') +
+            `\n\n`;
+        }
+
         const message =
           `🔄 *SWAP DETECTED*\n\n` +
           `👤 Wallet: \`${walletChecksum}\` [View](https://debank.com/profile/${walletChecksum})\n\n` +
           `📝 TX: [View](https://basescan.org/tx/${txHash})\n\n` +
-          (outs.length > 0
-            ? `🔻 *Out*:\n${outs[0].amount} ${outs[0].symbol}${outFlag ? ' ' + outFlag : ''}\n\n`
-            : '') +
-          (ins.length > 0
-            ? `🔺 *In*:\n${ins[0].amount} ${ins[0].symbol}${inFlag ? ' ' + inFlag : ''}\n\n`
-            : '') +
+          outLine +
+          inLine +
           `⏰ Aggregated ERC-20${tx && tx.value && tx.value > 0n ? ' / ETH' : ''} Movements`;
 
         try {
